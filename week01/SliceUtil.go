@@ -1,15 +1,11 @@
 package week01
 
 // SliceDelIdx 删除slice中指定位置的元素
-func SliceDelIdx[T any](slice *[]T, idx int) {
+func SliceDelIdx[T any](slice *[]T, idx uint) {
 	// 获取原slice的长度
-	sliceLen := len(*slice)
-	// 判断是否越界
-	if idx >= sliceLen || idx < 0 {
-		return
-	}
-	// 判断slice是否为空, 或者只有一个元素
-	if sliceLen <= 1 {
+	sliceLen := uint(len(*slice))
+	// 判断是否越界, 或者slice的长度为0
+	if idx >= sliceLen || sliceLen == 0 {
 		return
 	}
 	// 判断是否删除的是第一个元素 如果是则直接将slice的指针指向第二个元素
