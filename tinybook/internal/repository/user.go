@@ -14,12 +14,14 @@ type UserRepository struct {
 	userDao *dao.UserDAO
 }
 
+// NewUserRepository 构建UserRepository
 func NewUserRepository(dao *dao.UserDAO) *UserRepository {
 	return &UserRepository{
 		userDao: dao,
 	}
 }
 
+// Create 创建用户
 func (repo *UserRepository) Create(ctx context.Context, user domain.User) error {
 	return repo.userDao.Insert(ctx, dao.User{
 		Email:    user.Email,
@@ -27,6 +29,7 @@ func (repo *UserRepository) Create(ctx context.Context, user domain.User) error 
 	})
 }
 
+// FindByEmail 根据邮箱查找用户
 func (repo *UserRepository) FindByEmail(ctx *gin.Context, email string) (domain.User, error) {
 	user, err := repo.userDao.FindByEmail(ctx, email)
 	if err != nil {
@@ -39,6 +42,7 @@ func (repo *UserRepository) FindByEmail(ctx *gin.Context, email string) (domain.
 	}, nil
 }
 
+// UpdateById 根据id更新用户信息
 func (repo *UserRepository) UpdateById(ctx *gin.Context, id int64, birthday string, nickname string, me string) error {
 	user, err := repo.userDao.FindById(ctx, id)
 	if err != nil {
@@ -53,6 +57,7 @@ func (repo *UserRepository) UpdateById(ctx *gin.Context, id int64, birthday stri
 	return err
 }
 
+// FindById 根据id查找用户
 func (repo *UserRepository) FindById(ctx *gin.Context, id int64) (domain.User, error) {
 	byId, err := repo.userDao.FindById(ctx, id)
 	if err != nil {

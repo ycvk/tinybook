@@ -15,21 +15,25 @@ type User struct {
 	AboutMe  string `json:"aboutMe"`
 }
 
+// ValidateEmail 验证邮箱
 func (user *User) ValidateEmail() bool {
 	user.Email = strings.TrimSpace(user.Email)
 	return newUserRegexPattern().EmailRegex.MatchString(user.Email)
 }
 
+// ValidatePassword 验证密码
 func (user *User) ValidatePassword() bool {
 	user.Password = strings.TrimSpace(user.Password)
 	return newUserRegexPattern().PasswordRegex.MatchString(user.Password)
 }
 
+// ValidateNickname 验证昵称
 func (user *User) ValidateNickname() bool {
 	user.Nickname = strings.TrimSpace(user.Nickname)
 	return len(user.Nickname) > 0 && len(user.Nickname) <= 10
 }
 
+// ValidateBirthday 验证生日
 func (user *User) ValidateBirthday() bool {
 	birthday := user.Birthday
 	// 正则检查时间格式
@@ -49,21 +53,24 @@ func (user *User) ValidateBirthday() bool {
 	return inputTime.Before(currentTime)
 }
 
+// ValidateAboutMe 验证个人简介
 func (user *User) ValidateAboutMe() bool {
 	user.AboutMe = strings.TrimSpace(user.AboutMe)
 	return len(user.AboutMe) <= 100
 }
 
+// userRegexPattern 用户正则表达式
 type userRegexPattern struct {
 	EmailRegex    *regexp.Regexp
 	PasswordRegex *regexp.Regexp
 	BirthdayRegex *regexp.Regexp
 }
 
+// newUserRegexPattern 编译正则表达式
 func newUserRegexPattern() *userRegexPattern {
 	return &userRegexPattern{
 		EmailRegex:    regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`),
-		PasswordRegex: regexp.MustCompile(`^[\w-]{6,16}$`),
-		BirthdayRegex: regexp.MustCompile(`\d{4}-\d{2}-\d{2}`),
+		PasswordRegex: regexp.MustCompile(`^[\w-]{6,16}$`),     // 长度6-16位, 只能包含字母、数字、下划线、中划线
+		BirthdayRegex: regexp.MustCompile(`\d{4}-\d{2}-\d{2}`), // 格式为yyyy-MM-dd
 	}
 }

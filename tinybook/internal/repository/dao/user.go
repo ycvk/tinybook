@@ -16,6 +16,7 @@ type UserDAO struct {
 	db *gorm.DB
 }
 
+// User 用户表
 type User struct {
 	Id       int64  `gorm:"column:id;primaryKey;autoIncrement;not null"`
 	Email    string `gorm:"unique;column:email"`
@@ -33,6 +34,7 @@ func NewUserDAO(db *gorm.DB) *UserDAO {
 	}
 }
 
+// Insert 插入用户
 func (dao *UserDAO) Insert(ctx context.Context, user User) error {
 	now := time.Now().UnixMilli()
 	user.Ctime = now
@@ -47,18 +49,21 @@ func (dao *UserDAO) Insert(ctx context.Context, user User) error {
 	return err
 }
 
+// FindByEmail 根据邮箱查找用户
 func (dao *UserDAO) FindByEmail(ctx *gin.Context, email string) (User, error) {
 	var user User
 	err := dao.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	return user, err
 }
 
+// FindById 根据id查找用户
 func (dao *UserDAO) FindById(ctx *gin.Context, id int64) (User, error) {
 	var user User
 	err := dao.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
 	return user, err
 }
 
+// Update 调用gorm的更新方法，更新用户信息
 func (dao *UserDAO) Update(ctx *gin.Context, user User) error {
 	err := dao.db.WithContext(ctx).Updates(&user).Error
 	return err

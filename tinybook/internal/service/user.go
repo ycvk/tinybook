@@ -16,12 +16,14 @@ type UserService struct {
 	userRepo *repository.UserRepository
 }
 
+// NewUserService 构建UserService
 func NewUserService(userRepository *repository.UserRepository) *UserService {
 	return &UserService{
 		userRepo: userRepository,
 	}
 }
 
+// Signup 注册
 func (userService *UserService) Signup(ctx context.Context, user domain.User) error {
 	password := user.ValidatePassword()
 	email := user.ValidateEmail()
@@ -42,6 +44,7 @@ func (userService *UserService) Signup(ctx context.Context, user domain.User) er
 	return userService.userRepo.Create(ctx, user)
 }
 
+// Login 登录
 func (userService *UserService) Login(ctx *gin.Context, email string, password string) (domain.User, error) {
 	byEmail, err := userService.userRepo.FindByEmail(ctx, email)
 	if err != nil {
@@ -55,6 +58,7 @@ func (userService *UserService) Login(ctx *gin.Context, email string, password s
 	return byEmail, nil
 }
 
+// Edit 编辑
 func (userService *UserService) Edit(ctx *gin.Context, user domain.User) error {
 	birthday := user.ValidateBirthday()
 	nickname := user.ValidateNickname()
@@ -75,6 +79,7 @@ func (userService *UserService) Edit(ctx *gin.Context, user domain.User) error {
 	return err
 }
 
+// Profile 个人信息
 func (userService *UserService) Profile(ctx *gin.Context, userId int64) (domain.User, error) {
 	return userService.userRepo.FindById(ctx, userId)
 }

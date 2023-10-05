@@ -21,6 +21,7 @@ func NewUserHandler(userService *service.UserService) *UserHandler {
 	}
 }
 
+// SignUp 注册
 func (userHandler *UserHandler) SignUp(ctx *gin.Context) {
 	type Sign struct {
 		Password        string `json:"password"`
@@ -37,6 +38,7 @@ func (userHandler *UserHandler) SignUp(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, "两次密码不一致")
 		return
 	}
+	// 调用service层的Signup方法
 	err := userHandler.userService.Signup(ctx, domain.User{
 		Email:    sign.Email,
 		Password: sign.Password,
@@ -45,10 +47,10 @@ func (userHandler *UserHandler) SignUp(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, err.Error())
 		return
 	}
-
 	ctx.JSON(http.StatusOK, "注册成功")
 }
 
+// Login 登录
 func (userHandler *UserHandler) Login(ctx *gin.Context) {
 	type Login struct {
 		Password string `json:"password"`
@@ -60,6 +62,7 @@ func (userHandler *UserHandler) Login(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, "格式不正确")
 		return
 	}
+	// 调用service层的Login方法
 	user, err := userHandler.userService.Login(ctx, login.Email, login.Password)
 	if err != nil {
 		if err.Error() == ErrUserNotFound {
@@ -69,6 +72,7 @@ func (userHandler *UserHandler) Login(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, "密码不正确")
 		return
 	}
+	// 设置session 保存用户id 有效时间1小时
 	session := sessions.Default(ctx)
 	session.Set("userId", user.Id)
 	session.Options(sessions.Options{
@@ -83,6 +87,7 @@ func (userHandler *UserHandler) Login(ctx *gin.Context) {
 
 }
 
+// Edit 编辑
 func (userHandler *UserHandler) Edit(ctx *gin.Context) {
 	type Edit struct {
 		Nickname string `json:"nickname"`
@@ -94,13 +99,15 @@ func (userHandler *UserHandler) Edit(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, "格式不正确")
 		return
 	}
+	// 获取session中的userId
 	session := sessions.Default(ctx)
 	userId := session.Get("userId")
 	if userId == nil {
-		ctx.JSON(http.StatusOK, gin.H{"msg": "请先登录"})
+		ctx.JSON(http.StatusOK, gin.H{"msg": "用户未登录，请先登录"})
 		return
 	}
 
+	// 调用service层的Edit方法
 	err := userHandler.userService.Edit(ctx, domain.User{
 		Id:       userId.(int64),
 		Nickname: edit.Nickname,
@@ -114,20 +121,25 @@ func (userHandler *UserHandler) Edit(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"msg": "编辑成功"})
 }
 
+// Profile 获取个人信息
 func (userHandler *UserHandler) Profile(ctx *gin.Context) {
+	// 获取session中的userId
 	session := sessions.Default(ctx)
 	userId := session.Get("userId")
 	if userId == nil {
-		ctx.JSON(http.StatusOK, gin.H{"msg": "请先登录"})
+		ctx.JSON(http.StatusOK, gin.H{"msg": "用户未登录, 请先登录"})
 		return
 	}
+	// 调用service层的Profile方法
 	user, err := userHandler.userService.Profile(ctx, userId.(int64))
 	if err != nil {
 		ctx.JSON(http.StatusOK, gin.H{"msg": err.Error()})
 		return
 	}
 
-	ctx.JSON(200, gin.H{"Email": user.Email,
+	// 返回个人信息 我发现前端页面设计时没有设计手机号码字段，所以这里写死
+	ctx.JSON(200, gin.H{
+		"Email":    user.Email,
 		"Phone":    18011111111,
 		"Nickname": user.Nickname,
 		"Birthday": user.Birthday,
@@ -135,6 +147,7 @@ func (userHandler *UserHandler) Profile(ctx *gin.Context) {
 	})
 }
 
+// RegisterRoutes 注册路由
 func (userHandler *UserHandler) RegisterRoutes(engine *gin.Engine) {
 	group := engine.Group("/users")
 
