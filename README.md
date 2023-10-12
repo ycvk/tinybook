@@ -43,10 +43,20 @@ Golang class homework in Geek Space
 
 ![post_01](https://i.mji.rip/2023/10/02/73405f3b359c19579beaaa5fb4fb588e.png)
 
+---
+
 ![post_02](https://i.mji.rip/2023/10/02/2c01cc2c383c90dfea1d2ff39612d0c0.png)
+
+---
 
 **前端请求预览**：
 
 <img src="https://i.mji.rip/2023/10/02/23b5761e808f0d6b12a3582d8fa39dbf.png" width="40%" height="40%" alt="web_01" align=center />
 
 <img src="https://i.mji.rip/2023/10/02/f8b1662852a50f852884534bbb4b1876.png" width="40%" height="40%" alt="web_02" align=center />
+
+<img src="https://i.mji.rip/2023/10/12/c298dd3635e8b41562a377f98be29cb1.png" width="40%" height="40%" alt="web_03" align=center />
+
+<img src="https://i.mji.rip/2023/10/12/3fb6326899142d4b0903ec785dd646c2.png" width="40%" height="40%" alt="web_04" align=center />
+
+<img src="https://i.mji.rip/2023/10/12/523ea485027beee9f6e381a53f8db630.png" width="40%" height="40%" alt="web_05" align=center />
