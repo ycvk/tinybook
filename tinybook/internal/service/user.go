@@ -65,7 +65,7 @@ func (userService *UserService) Edit(ctx *gin.Context, user domain.User) error {
 	aboutMe := user.ValidateAboutMe()
 	if !birthday {
 		slog.Error("生日格式不正确", "birthday", user.Birthday)
-		return errors.New("生日格式不正确, 格式为yyyy-MM-dd")
+		return errors.New("生日格式不正确 (格式为yyyy-MM-dd) 或输入日期超出当前日期")
 	}
 	if !nickname {
 		slog.Error("昵称格式不正确", "nickname", user.Nickname)

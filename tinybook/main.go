@@ -8,7 +8,7 @@ import (
 	"geek_homework/tinybook/internal/web/middleware"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -20,7 +20,16 @@ func main() {
 	engine := gin.Default()
 	// 初始化登录session
 	loginMiddleware := middleware.LoginMiddlewareBuilder{}
-	store := cookie.NewStore([]byte("secret"))
+	store, err := redis.NewStore(16,
+		"tcp",
+		"localhost:6379",
+		"",
+		[]byte("zcPbUOs7zYO1ky2WgE14chotKwcp95Hp"), //authentication key 身份验证密钥
+		[]byte("GdGvU8pRs439iNREpNtl1gZhY7jU8zRt"), //encryption key 加密密钥
+	)
+	if err != nil {
+		panic(err)
+	}
 	// 跨域配置
 	engine.Use(initCorsConfig(),
 		sessions.Sessions("ssid", store),
@@ -54,7 +63,7 @@ func initDB() *gorm.DB {
 
 func initCorsConfig() gin.HandlerFunc {
 	corsConfig := cors.New(cors.Config{
-		//AllowMethods:     []string{"POST", "GET", "OPTIONS"},                   //允许跨域的方法
+		AllowMethods: []string{"POST", "GET", "OPTIONS"},        //允许跨域的方法
 		AllowHeaders: []string{"Content-Type", "Authorization"}, // 允许跨域的Header
 		//ExposeHeaders:    []string{"Content-Length"},                           // 允许访问的Header
 		AllowCredentials: true, //  允许携带cookie
