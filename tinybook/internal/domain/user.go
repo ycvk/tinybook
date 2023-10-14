@@ -4,6 +4,7 @@ import (
 	regexp "github.com/wasilibs/go-re2"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 type User struct {
@@ -30,8 +31,8 @@ func (user *User) ValidatePassword() bool {
 // ValidateNickname 验证昵称
 func (user *User) ValidateNickname() bool {
 	user.Nickname = strings.TrimSpace(user.Nickname)
-	runesName := []rune(user.Nickname)
-	return len(runesName) > 0 && len(runesName) <= 10
+	countInString := utf8.RuneCountInString(user.Nickname)
+	return countInString > 0 && countInString <= 10
 }
 
 // ValidateBirthday 验证生日
@@ -57,7 +58,7 @@ func (user *User) ValidateBirthday() bool {
 // ValidateAboutMe 验证个人简介
 func (user *User) ValidateAboutMe() bool {
 	user.AboutMe = strings.TrimSpace(user.AboutMe)
-	return len([]rune(user.AboutMe)) <= 200
+	return utf8.RuneCountInString(user.AboutMe) <= 200
 }
 
 // userRegexPattern 用户正则表达式
