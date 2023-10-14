@@ -1,0 +1,14 @@
+apiVersion: v1
+# 一个容器化的应用程序，需要一个持久化的存储来存储数据，这里使用的是PersistentVolumeClaim
+kind: PersistentVolumeClaim
+metadata:
+  name: tinybook-mysql-pv-claim
+spec:
+  storageClassName: manual
+  # 访问模式，ReadWriteOnce表示可以被单个节点以读写的方式挂载
+  accessModes:
+    - ReadWriteOnce
+  # 申请的存储空间大小
+  resources:
+    requests:
+      storage: 1Gi

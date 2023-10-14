@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tinybook-mysql
+  labels:
+    app: tinybook-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tinybook-mysql
+  template:
+    metadata:
+      name: tinybook-mysql
+      labels:
+        app: tinybook-mysql
+    spec:
+      containers:
+        - name: tinybook-mysql
+          image: bitnami/mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "root"
+            - name: MYSQL_DATABASE
+              value: "tinybook"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: mysql
+              containerPort: 3306
+          volumeMounts:
+            - name: mysql-storage
+              mountPath: /var/lib/mysql
+      restartPolicy: Always
+      volumes:
+        - name: mysql-storage
+          # 这里的claimName要和tinybook-mysql-pv.yaml中的metadata.name一致
+          persistentVolumeClaim:
+            claimName: tinybook-mysql-pv-claim
+      
