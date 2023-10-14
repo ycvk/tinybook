@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tinybook-redis
+spec:
+  selector:
+    app: tinybook-redis
+  ports:
+    - protocol: TCP
+      # 外部访问端口 必须在30000-32767之间
+      nodePort: 30001
+      # 内部端口 k8s集群内部访问端口
+      port: 6380
+      targetPort: 6379
+  type: NodePort
+  

@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tinybook-redis
+  labels:
+    app: tinybook-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tinybook-redis
+  template:
+    metadata:
+      name: tinybook-redis
+      labels:
+        app: tinybook-redis
+    spec:
+      containers:
+        - name: tinybook-redis
+          image: bitnami/redis:7.0
+          env:
+            - name: ALLOW_EMPTY_PASSWORD
+              value: "yes"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: redis
+              containerPort: 6379
+      restartPolicy: Always
+      
