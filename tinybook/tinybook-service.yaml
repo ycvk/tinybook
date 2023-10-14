@@ -6,8 +6,10 @@ spec:
   selector:
     app: tinybook-service
   ports:
+    # 以下配置表示，当访问tinybook-service:8888时，会将请求转发到tinybook-service:8081
     - protocol: TCP
       port: 8888
-      targetPort: 8080
-  type: LoadBalancer
+      targetPort: 8081
+  # 以下配置表示，tinybook-service只能在k8s集群内部访问
+  type: ClusterIP
   

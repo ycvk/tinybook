@@ -12,5 +12,6 @@ spec:
       # 内部端口 k8s集群内部访问端口
       port: 6380
       targetPort: 6379
+  # 以下配置表示，tinybook-redis可以在k8s集群内部和外部访问
   type: NodePort
   

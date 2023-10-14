@@ -5,14 +5,24 @@ import (
 	"geek_homework/tinybook/internal/service"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"strings"
+	"time"
 )
 
 var ErrUserNotFound = service.ErrUserNotFound
 
+const JWTKey = "MK7z43qKmUkY5sy9w3rQ8CygFpOSN90W"
+
 type UserHandler struct {
 	userService *service.UserService
+}
+
+type UserClaims struct {
+	jwt.RegisteredClaims
+	Uid       int64  `json:"uid"`
+	UserAgent string `json:"userAgent"`
 }
 
 func NewUserHandler(userService *service.UserService) *UserHandler {
@@ -50,6 +60,46 @@ func (userHandler *UserHandler) SignUp(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, "注册成功")
 }
 
+// LoginJWT 登录
+func (userHandler *UserHandler) LoginJWT(ctx *gin.Context) {
+	type Login struct {
+		Password string `json:"password"`
+		Email    string `json:"email"`
+	}
+
+	var login Login
+	if err := ctx.Bind(&login); err != nil {
+		ctx.JSON(http.StatusOK, "格式不正确")
+		return
+	}
+	// 调用service层的Login方法
+	user, err := userHandler.userService.Login(ctx, login.Email, login.Password)
+	if err != nil {
+		if err.Error() == ErrUserNotFound {
+			ctx.JSON(http.StatusOK, "用户不存在")
+			return
+		}
+		ctx.JSON(http.StatusOK, "密码不正确")
+		return
+	}
+
+	userClaims := UserClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 12)),
+		},
+		Uid:       user.Id,
+		UserAgent: ctx.Request.UserAgent(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, userClaims) //生成token
+	tokenStr, err := token.SignedString([]byte(JWTKey))
+	if err != nil {
+		ctx.JSON(http.StatusOK, "系统错误")
+		return
+	}
+	ctx.Header("X-Jwt-Token", tokenStr)
+	ctx.JSON(http.StatusOK, "登录成功")
+}
+
 // Login 登录
 func (userHandler *UserHandler) Login(ctx *gin.Context) {
 	type Login struct {
@@ -84,7 +134,6 @@ func (userHandler *UserHandler) Login(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, "登录成功")
-
 }
 
 // Edit 编辑
@@ -100,16 +149,22 @@ func (userHandler *UserHandler) Edit(ctx *gin.Context) {
 		return
 	}
 	// 获取session中的userId
-	session := sessions.Default(ctx)
-	userId := session.Get("userId")
-	if userId == nil {
-		ctx.JSON(http.StatusOK, gin.H{"msg": "用户未登录，请先登录"})
+	//session := sessions.Default(ctx)
+	//userId := session.Get("userId")
+	//if userId == nil {
+	//	ctx.JSON(http.StatusOK, gin.H{"msg": "用户未登录，请先登录"})
+	//	return
+	//}
+	// 使用jwt token获取userId
+	claims, ok := (ctx.MustGet("userClaims")).(UserClaims)
+	if !ok {
+		ctx.JSON(http.StatusOK, gin.H{"msg": "用户未登录, 请先登录"})
 		return
 	}
 
 	// 调用service层的Edit方法
 	err := userHandler.userService.Edit(ctx, domain.User{
-		Id:       userId.(int64),
+		Id:       claims.Uid,
 		Nickname: edit.Nickname,
 		Birthday: edit.Birthday,
 		AboutMe:  edit.AboutMe,
@@ -124,14 +179,16 @@ func (userHandler *UserHandler) Edit(ctx *gin.Context) {
 // Profile 获取个人信息
 func (userHandler *UserHandler) Profile(ctx *gin.Context) {
 	// 获取session中的userId
-	session := sessions.Default(ctx)
-	userId := session.Get("userId")
-	if userId == nil {
+	//session := sessions.Default(ctx)
+	//userId := session.Get("userId")
+	// 使用jwt token获取userId
+	claims, ok := (ctx.MustGet("userClaims")).(UserClaims)
+	if !ok {
 		ctx.JSON(http.StatusOK, gin.H{"msg": "用户未登录, 请先登录"})
 		return
 	}
 	// 调用service层的Profile方法
-	user, err := userHandler.userService.Profile(ctx, userId.(int64))
+	user, err := userHandler.userService.Profile(ctx, claims.Uid)
 	if err != nil {
 		ctx.JSON(http.StatusOK, gin.H{"msg": err.Error()})
 		return
@@ -140,7 +197,7 @@ func (userHandler *UserHandler) Profile(ctx *gin.Context) {
 	// 返回个人信息 我发现前端页面设计时没有设计手机号码字段，所以这里写死
 	ctx.JSON(200, gin.H{
 		"Email":    user.Email,
-		"Phone":    18011111111,
+		"Phone":    "18011111111",
 		"Nickname": user.Nickname,
 		"Birthday": user.Birthday,
 		"AboutMe":  user.AboutMe,
@@ -152,7 +209,8 @@ func (userHandler *UserHandler) RegisterRoutes(engine *gin.Engine) {
 	group := engine.Group("/users")
 
 	group.POST("/signup", userHandler.SignUp)
-	group.POST("/login", userHandler.Login)
+	//group.POST("/login", userHandler.Login)
+	group.POST("/login", userHandler.LoginJWT)
 	group.POST("/edit", userHandler.Edit)
 	group.GET("/profile", userHandler.Profile)
 }

@@ -15,6 +15,8 @@ spec:
       labels:
         app: tinybook-mysql
     spec:
+      # 以下配置表示:
+      # 服务容器的镜像为bitnami/mysql:8.0，镜像中的容器端口为3306，挂载的存储卷为mysql-storage
       containers:
         - name: tinybook-mysql
           image: bitnami/mysql:8.0
