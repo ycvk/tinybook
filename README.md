@@ -43,6 +43,7 @@ Golang class homework in Geek Space.
 
 <details>
   <summary>点击展开图片</summary>
+
 ![post_01](https://i.mji.rip/2023/10/02/73405f3b359c19579beaaa5fb4fb588e.png)
 ![post_02](https://i.mji.rip/2023/10/02/2c01cc2c383c90dfea1d2ff39612d0c0.png)
 
@@ -69,7 +70,7 @@ Golang class homework in Geek Space.
 
 ---
 
-## 第三周作业：部署方案修改
+## [Week03：部署方案修改](https://github.com/ycvk/geek_homework/tree/main/tinybook)
 
 ### 作业要求
 
@@ -95,6 +96,7 @@ Golang class homework in Geek Space.
 
 <details>
   <summary>点击展开图片</summary>
+
 #### Profile 页面
 
 ![web_01](https://i.mji.rip/2023/10/15/fbed29fab3a8267054635fbbb893e6e9.png)
