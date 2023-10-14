@@ -73,7 +73,7 @@ func (userService *UserService) Edit(ctx *gin.Context, user domain.User) error {
 	}
 	if !aboutMe {
 		slog.Error("个人简介格式不正确", "aboutMe", user.AboutMe)
-		return errors.New("个人简介长度不正确, 长度不能超过100位")
+		return errors.New("个人简介长度不正确, 长度不能超过200位")
 	}
 	err := userService.userRepo.UpdateById(ctx, user.Id, user.Birthday, user.Nickname, user.AboutMe)
 	return err
