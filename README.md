@@ -70,7 +70,7 @@ Golang class homework in Geek Space.
 
 ---
 
-## [Week03：部署方案修改](https://github.com/ycvk/geek_homework/tree/main/tinybook)
+## [Week03：部署方案修改](https://github.com/ycvk/geek_homework/tree/week03/tinybook)
 
 ### 作业要求
 
