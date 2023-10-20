@@ -25,6 +25,8 @@ spec:
               value: "root"
             - name: MYSQL_DATABASE
               value: "tinybook"
+            - name: TZ
+              value: "Asia/Shanghai"
           imagePullPolicy: IfNotPresent
           ports:
             - name: mysql

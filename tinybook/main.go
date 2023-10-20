@@ -3,6 +3,7 @@ package main
 import (
 	"geek_homework/tinybook/config"
 	"geek_homework/tinybook/internal/repository"
+	"geek_homework/tinybook/internal/repository/cache"
 	"geek_homework/tinybook/internal/repository/dao"
 	"geek_homework/tinybook/internal/service"
 	"geek_homework/tinybook/internal/web"
@@ -23,8 +24,9 @@ func main() {
 	engine := gin.Default()
 	// 跨域配置
 	initCorsConfig(engine)
-	// 初始化限流
+	// 初始化redis
 	redisClient := initRedis()
+	// 初始化限流
 	build := ratelimit.NewBuilder(redisClient, time.Second, 5).Build() // 一秒钟限制5次
 	engine.Use(build)
 	// 初始化登录session
@@ -34,11 +36,8 @@ func main() {
 	// 初始化数据库
 	db := initDB()
 	// 初始化用户模块
-	initUser(db, engine)
+	initUser(redisClient, db, engine)
 
-	//engine.GET("/ping", func(ctx *gin.Context) {
-	//	ctx.String(200, "hello world!")
-	//})
 	engine.Run(":8081")
 }
 
@@ -73,9 +72,10 @@ func initLoginSession(engine *gin.Engine) {
 	)
 }
 
-func initUser(db *gorm.DB, engine *gin.Engine) {
+func initUser(redis *redis.Client, db *gorm.DB, engine *gin.Engine) {
+	userCache := cache.NewUserCache(redis) // 初始化用户缓存
 	userDAO := dao.NewUserDAO(db)
-	userRepository := repository.NewUserRepository(userDAO)
+	userRepository := repository.NewUserRepository(userDAO, userCache)
 	userService := service.NewUserService(userRepository)
 	userHandler := web.NewUserHandler(userService)
 

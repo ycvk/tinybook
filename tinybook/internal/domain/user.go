@@ -71,8 +71,8 @@ type userRegexPattern struct {
 // newUserRegexPattern 编译正则表达式
 func newUserRegexPattern() *userRegexPattern {
 	return &userRegexPattern{
-		EmailRegex:    regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`),
-		PasswordRegex: regexp.MustCompile(`^[\w-]{6,16}$`),     // 长度6-16位, 只能包含字母、数字、下划线、中划线
-		BirthdayRegex: regexp.MustCompile(`\d{4}-\d{2}-\d{2}`), // 格式为yyyy-MM-dd
+		EmailRegex:    regexp.MustCompile(`^[a-zA-Z0-9._%+-]{1,64}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`),
+		PasswordRegex: regexp.MustCompile(`^[\w-!@#$%^&*()_+={}\[\]:;"'<>,.?~]{6,16}$`), // 长度6-16位, 只能包含字母、数字、特殊字符
+		BirthdayRegex: regexp.MustCompile(`\d{4}-\d{2}-\d{2}`),                          // 格式为yyyy-MM-dd
 	}
 }

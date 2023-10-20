@@ -33,7 +33,7 @@ func (userService *UserService) Signup(ctx context.Context, user domain.User) er
 	}
 	if !password {
 		slog.Error("密码格式或长度不正确", "password", user.Password)
-		return errors.New("密码格式或长度不正确, 长度6-16位, 只能包含字母、数字、下划线、中划线")
+		return errors.New("密码格式或长度不正确, 长度6-16位, 且只能包含数字和字母和特殊字符")
 	}
 	generateFromPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
