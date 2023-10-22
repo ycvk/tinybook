@@ -4,7 +4,7 @@ docker:
 	@rm -f tinybook || true
 	@go mod tidy
 	# 编译二进制文件
-	@GOOS=linux GOARCH=arm64 go build -o tinybook .
+	@GOOS=linux GOARCH=arm64 go build -tags=k8s -o tinybook .
 	# 删除上次编译的镜像
 	@docker rmi -f ycvk/tinybook:v0.0.1 || true
 	# 构建镜像

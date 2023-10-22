@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tinybook-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  # 这里的host是指域名，如果是本地测试，可以使用localhost
+  # 以下配置表示, 当访问localhost:80时，会将请求转发到tinybook-service:8888
+  rules:
+    - host: localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tinybook-service
+                port:
+                  number: 8888
+                

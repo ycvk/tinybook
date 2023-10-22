@@ -3,7 +3,8 @@ kind: Deployment
 metadata:
   name: tinybook-service
 spec:
-  replicas: 3
+  # 以下配置为服务副本数 2个
+  replicas: 2
   selector:
     matchLabels:
       app: tinybook-service
@@ -12,11 +13,13 @@ spec:
       labels:
         app: tinybook-service
     spec:
+      # 以下配置表示:
+      # 服务容器的镜像为ycvk/tinybook:v0.0.1，镜像中的容器端口为8081，容器资源限制为0.5核CPU和128Mi内存
       containers:
         - name: tinybook
           image: ycvk/tinybook:v0.0.1
           ports:
-            - containerPort: 8080
+            - containerPort: 8081
           resources:
             limits:
               cpu: "0.5"
