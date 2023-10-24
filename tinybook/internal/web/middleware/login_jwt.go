@@ -4,6 +4,7 @@ import (
 	"geek_homework/tinybook/internal/web"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/samber/lo"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -15,10 +16,14 @@ type LoginJWTMiddlewareBuilder struct {
 
 // Build 构建登录中间件
 func (builder *LoginJWTMiddlewareBuilder) Build() gin.HandlerFunc {
+	pathList := make([]string, 10)
+	pathList = append(pathList,
+		"/users/login", "/users/signup",
+		"/login_sms/code/send", "/login_sms")
 	return func(ctx *gin.Context) {
 		path := ctx.Request.URL.Path
 		// 登录和注册不需要经过登录中间件, 可以在未经认证的情况下访问
-		if path == "/users/login" || path == "/users/signup" {
+		if lo.Contains(pathList, path) {
 			return
 		}
 		// 从header中获取jwt token

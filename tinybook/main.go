@@ -35,8 +35,8 @@ func main() {
 	initLoginJWT(engine)
 	// 初始化数据库
 	db := initDB()
-	// 初始化用户模块
-	initUser(redisClient, db, engine)
+	// 初始化模块
+	initHandler(redisClient, db, engine)
 
 	engine.Run(":8081")
 }
@@ -72,14 +72,31 @@ func initLoginSession(engine *gin.Engine) {
 	)
 }
 
-func initUser(redis *redis.Client, db *gorm.DB, engine *gin.Engine) {
-	userCache := cache.NewUserCache(redis) // 初始化用户缓存
+// initUser 初始化handler
+func initHandler(redis *redis.Client, db *gorm.DB, engine *gin.Engine) {
+	userService := initUser(redis, db)
+	codeService := initCode(redis)
+	// 初始化用户模块
+	userHandler := web.NewUserHandler(userService, codeService)
+	// 注册路由
+	userHandler.RegisterRoutes(engine)
+}
+
+// 初始化用户服务
+func initUser(redis *redis.Client, db *gorm.DB) *service.UserService {
+	userCache := cache.NewUserCache(redis)
 	userDAO := dao.NewUserDAO(db)
 	userRepository := repository.NewUserRepository(userDAO, userCache)
 	userService := service.NewUserService(userRepository)
-	userHandler := web.NewUserHandler(userService)
+	return userService
+}
 
-	userHandler.RegisterRoutes(engine)
+// 初始化验证码服务
+func initCode(redis *redis.Client) *service.CodeService {
+	codeCache := cache.NewCodeCache(redis)
+	codeRepository := repository.NewCodeRepository(codeCache)
+	codeService := service.NewCodeService(codeRepository, nil)
+	return codeService
 }
 
 // initDB 初始化数据库

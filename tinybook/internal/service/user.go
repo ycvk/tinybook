@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"errors"
 	"geek_homework/tinybook/internal/domain"
 	"geek_homework/tinybook/internal/repository"
@@ -10,7 +9,10 @@ import (
 	"log/slog"
 )
 
-var ErrUserNotFound = repository.ErrUserNotFound
+var (
+	ErrUserNotFound = repository.ErrUserNotFound
+	ErrorUserExist  = repository.ErrorUserExist
+)
 
 type UserService struct {
 	userRepo *repository.UserRepository
@@ -24,7 +26,7 @@ func NewUserService(userRepository *repository.UserRepository) *UserService {
 }
 
 // Signup 注册
-func (userService *UserService) Signup(ctx context.Context, user domain.User) error {
+func (userService *UserService) Signup(ctx *gin.Context, user domain.User) error {
 	password := user.ValidatePassword()
 	email := user.ValidateEmail()
 	if !email {
@@ -82,4 +84,33 @@ func (userService *UserService) Edit(ctx *gin.Context, user domain.User) error {
 // Profile 个人信息
 func (userService *UserService) Profile(ctx *gin.Context, userId int64) (domain.User, error) {
 	return userService.userRepo.FindById(ctx, userId)
+}
+
+// LoginOrSignup 登录或注册
+func (userService *UserService) LoginOrSignup(ctx *gin.Context, phone string) (domain.User, error) {
+	byPhone, err := userService.userRepo.FindByPhone(ctx, phone)
+	if err != nil {
+		if err.Error() == ErrUserNotFound {
+			// 用户不存在, 注册
+			user := domain.User{
+				Phone: phone,
+			}
+			err := userService.userRepo.Create(ctx, user)
+			if err != nil {
+				// 注册失败, 可能是手机号已存在, 也可能是其他原因
+				if err.Error() == ErrorUserExist {
+					return domain.User{}, errors.New("手机号已存在")
+				}
+				return domain.User{}, err
+			}
+			// 注册成功后再次查询
+			byPhone, err = userService.userRepo.FindByPhone(ctx, phone)
+			if err != nil {
+				return domain.User{}, err
+			}
+			return byPhone, nil
+		}
+		return domain.User{}, err
+	}
+	return byPhone, nil
 }

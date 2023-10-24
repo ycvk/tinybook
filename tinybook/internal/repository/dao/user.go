@@ -2,15 +2,18 @@ package dao
 
 import (
 	"context"
+	"database/sql"
 	"errors"
-	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 	"time"
 )
 
-var duplicateEmailError = errors.New("邮箱已存在")
-var ErrUserNotFound = gorm.ErrRecordNotFound.Error()
+var (
+	duplicateEmailError = errors.New("邮箱已存在")
+	ErrUserNotFound     = gorm.ErrRecordNotFound.Error()
+	ErrUserDuplicate    = gorm.ErrDuplicatedKey.Error()
+)
 
 type UserDAO struct {
 	db *gorm.DB
@@ -18,14 +21,15 @@ type UserDAO struct {
 
 // User 用户表
 type User struct {
-	Id       int64  `gorm:"column:id;primaryKey;autoIncrement;not null"`
-	Email    string `gorm:"unique;column:email"`
-	Password string `gorm:"column:password"`
-	Ctime    int64  `gorm:"column:ctime"`
-	Utime    int64  `gorm:"column:utime"`
-	Nickname string `gorm:"column:nickname"`
-	Birthday string `gorm:"column:birthday"`
-	AboutMe  string `gorm:"column:about_me"`
+	Id       int64          `gorm:"column:id;primaryKey;autoIncrement;not null"`
+	Email    sql.NullString `gorm:"unique;column:email"`
+	Phone    sql.NullString `gorm:"unique;column:phone"`
+	Password string         `gorm:"column:password"`
+	Ctime    int64          `gorm:"column:ctime"`
+	Utime    int64          `gorm:"column:utime"`
+	Nickname string         `gorm:"column:nickname"`
+	Birthday string         `gorm:"column:birthday"`
+	AboutMe  string         `gorm:"column:about_me"`
 }
 
 func NewUserDAO(db *gorm.DB) *UserDAO {
@@ -50,21 +54,28 @@ func (dao *UserDAO) Insert(ctx context.Context, user User) error {
 }
 
 // FindByEmail 根据邮箱查找用户
-func (dao *UserDAO) FindByEmail(ctx *gin.Context, email string) (User, error) {
+func (dao *UserDAO) FindByEmail(ctx context.Context, email string) (User, error) {
 	var user User
 	err := dao.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	return user, err
 }
 
 // FindById 根据id查找用户
-func (dao *UserDAO) FindById(ctx *gin.Context, id int64) (User, error) {
+func (dao *UserDAO) FindById(ctx context.Context, id int64) (User, error) {
 	var user User
 	err := dao.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
 	return user, err
 }
 
 // Update 调用gorm的更新方法，更新用户信息
-func (dao *UserDAO) Update(ctx *gin.Context, user User) error {
+func (dao *UserDAO) Update(ctx context.Context, user User) error {
 	err := dao.db.WithContext(ctx).Updates(&user).Error
 	return err
+}
+
+// FindByPhone 根据手机号查找用户
+func (dao *UserDAO) FindByPhone(ctx context.Context, phone string) (User, error) {
+	var user User
+	err := dao.db.WithContext(ctx).Where("phone = ?", phone).First(&user).Error
+	return user, err
 }

@@ -1,10 +1,10 @@
 package cache
 
 import (
+	"context"
 	"fmt"
 	"geek_homework/tinybook/internal/domain"
 	"github.com/bytedance/sonic"
-	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"time"
 )
@@ -16,7 +16,7 @@ type UserCache struct {
 	expiration time.Duration
 }
 
-func (c UserCache) GetById(ctx *gin.Context, id int64) (domain.User, error) {
+func (c UserCache) GetById(ctx context.Context, id int64) (domain.User, error) {
 	key := c.key(id)
 	result, err := c.cmd.Get(ctx, key).Result()
 	if err != nil {
@@ -33,7 +33,7 @@ func (c UserCache) key(uid int64) string {
 	return fmt.Sprintf("user:info:%d", uid)
 }
 
-func (c UserCache) SetById(ctx *gin.Context, user domain.User) error {
+func (c UserCache) SetById(ctx context.Context, user domain.User) error {
 	key := c.key(user.Id)
 	// 序列化
 	value, err := sonic.MarshalString(user)
