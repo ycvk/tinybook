@@ -12,6 +12,7 @@ require (
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/gocolly/colly/v2 v2.1.0
 	github.com/golang-jwt/jwt/v5 v5.0.0
+	github.com/google/wire v0.5.0
 	github.com/redis/go-redis/v9 v9.2.1
 	github.com/samber/lo v1.38.1
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms v1.0.770
@@ -82,6 +83,7 @@ require (
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	golang.org/x/arch v0.5.0 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
+	golang.org/x/sync v0.4.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
