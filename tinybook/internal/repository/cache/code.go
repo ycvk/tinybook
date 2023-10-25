@@ -30,6 +30,10 @@ type LocalCodeCache struct {
 	client *theine.Cache[string, any]
 }
 
+// SetCode 设置验证码 timeInterval: 有效时间, 比如600 表示10分钟内有效
+// 往本地缓存设置了一个bool key, 60秒的ttl, 用于判断是否可以发送下次验证码, 防止验证码发送太频繁
+// 往本地缓存设置了一个limit key 和 code key, 过期时间一样, 用于存储 验证码 和 验证码错误次数
+// 每次都会首先检查bool key, 如果存在, 说明验证码发送太频繁, 距离上次发送还未超过60秒, 直接返回错误
 func (l *LocalCodeCache) SetCode(ctx context.Context, phone, biz, code, timeInterval string) error {
 	atoi, err := strconv.Atoi(timeInterval)
 	if err != nil {
@@ -56,6 +60,10 @@ func (l *LocalCodeCache) SetCode(ctx context.Context, phone, biz, code, timeInte
 	return nil
 }
 
+// VerifyCode 验证验证码
+// 先检查是否存在limit key, 如果不存在, 说明验证码已过期或不存在, 直接返回错误
+// 再检查是否超过次数, 如果超过次数, 直接返回错误
+// 再检查验证码是否正确, 如果正确, 删除验证码
 func (l *LocalCodeCache) VerifyCode(ctx context.Context, phone, biz, code string) (bool, error) {
 	key := key(biz, phone)
 	// 检查是否超过次数
