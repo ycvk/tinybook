@@ -45,6 +45,10 @@ func (repo *CachedUserRepository) Create(ctx context.Context, user domain.User) 
 			Valid:  user.Email != "",
 		},
 		Password: user.Password,
+		Phone: sql.NullString{
+			String: user.Phone,
+			Valid:  user.Phone != "",
+		},
 	})
 }
 

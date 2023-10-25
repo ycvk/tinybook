@@ -103,20 +103,20 @@ func (userService *userService) LoginOrSignup(ctx *gin.Context, phone string) (d
 			user := domain.User{
 				Phone: phone,
 			}
-			err := userService.userRepo.Create(ctx, user)
-			if err != nil {
+			createErr := userService.userRepo.Create(ctx, user)
+			if createErr != nil {
 				// 注册失败, 可能是手机号已存在, 也可能是其他原因
-				if err.Error() == ErrorUserExist {
+				if createErr.Error() == ErrorUserExist {
 					return domain.User{}, errors.New("手机号已存在")
 				}
 				return domain.User{}, err
 			}
 			// 注册成功后再次查询
-			byPhone, err = userService.userRepo.FindByPhone(ctx, phone)
-			if err != nil {
+			byPhoneSec, findErr := userService.userRepo.FindByPhone(ctx, phone)
+			if findErr != nil {
 				return domain.User{}, err
 			}
-			return byPhone, nil
+			return byPhoneSec, nil
 		}
 		return domain.User{}, err
 	}

@@ -7,7 +7,6 @@ import (
 	"geek_homework/tinybook/internal/repository"
 	"geek_homework/tinybook/internal/service/sms"
 	regexp "github.com/wasilibs/go-re2"
-	"log/slog"
 	"math/rand"
 )
 
@@ -34,7 +33,6 @@ func (codeService *codeService) Send(ctx context.Context, biz, phone, timeInterv
 		return errors.New(fmt.Sprintf("手机号码格式不正确: %s", phone))
 	}
 	code := codeService.generateCode()
-	slog.Info("生成验证码", "code", code)
 	err := codeService.repo.Set(ctx, biz, phone, code, timeInterval)
 	if err != nil {
 		return err

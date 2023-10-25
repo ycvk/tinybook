@@ -7,12 +7,12 @@ import (
 )
 
 var (
-	Once        sync.Once
+	redisOnce   sync.Once
 	redisClient redis.Cmdable
 )
 
 func InitRedis() redis.Cmdable {
-	Once.Do(func() {
+	redisOnce.Do(func() {
 		redisClient = redis.NewClient(&redis.Options{
 			Addr: config.Config.Redis.Host,
 		})

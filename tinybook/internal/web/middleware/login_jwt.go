@@ -19,7 +19,7 @@ func (builder *LoginJWTMiddlewareBuilder) Build() gin.HandlerFunc {
 	pathList := make([]string, 10)
 	pathList = append(pathList,
 		"/users/login", "/users/signup",
-		"/login_sms/code/send", "/login_sms")
+		"/users/login_sms/code/send", "/users/login_sms")
 	return func(ctx *gin.Context) {
 		path := ctx.Request.URL.Path
 		// 登录和注册不需要经过登录中间件, 可以在未经认证的情况下访问
