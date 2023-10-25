@@ -11,12 +11,17 @@ import (
 
 var ErrUserNotFound = redis.Nil
 
-type UserCache struct {
+type UserCache interface {
+	GetById(ctx context.Context, id int64) (domain.User, error)
+	SetById(ctx context.Context, user domain.User) error
+}
+
+type RedisUserCache struct {
 	cmd        redis.Cmdable
 	expiration time.Duration
 }
 
-func (c UserCache) GetById(ctx context.Context, id int64) (domain.User, error) {
+func (c RedisUserCache) GetById(ctx context.Context, id int64) (domain.User, error) {
 	key := c.key(id)
 	result, err := c.cmd.Get(ctx, key).Result()
 	if err != nil {
@@ -29,11 +34,11 @@ func (c UserCache) GetById(ctx context.Context, id int64) (domain.User, error) {
 }
 
 // key 生成缓存key
-func (c UserCache) key(uid int64) string {
+func (c RedisUserCache) key(uid int64) string {
 	return fmt.Sprintf("user:info:%d", uid)
 }
 
-func (c UserCache) SetById(ctx context.Context, user domain.User) error {
+func (c RedisUserCache) SetById(ctx context.Context, user domain.User) error {
 	key := c.key(user.Id)
 	// 序列化
 	value, err := sonic.MarshalString(user)
@@ -44,8 +49,8 @@ func (c UserCache) SetById(ctx context.Context, user domain.User) error {
 	return c.cmd.Set(ctx, key, value, c.expiration).Err()
 }
 
-func NewUserCache(cmd redis.Cmdable) *UserCache {
-	return &UserCache{
+func NewRedisUserCache(cmd redis.Cmdable) UserCache {
+	return &RedisUserCache{
 		cmd:        cmd,
 		expiration: time.Minute * 15,
 	}

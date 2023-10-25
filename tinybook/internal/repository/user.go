@@ -15,21 +15,30 @@ var (
 	ErrorUserExist  = dao.ErrUserDuplicate
 )
 
-type UserRepository struct {
-	userDao   *dao.UserDAO
+type UserRepository interface {
+	Create(ctx context.Context, user domain.User) error
+	FindByEmail(ctx context.Context, email string) (domain.User, error)
+	FindById(ctx context.Context, id int64) (domain.User, error)
+	FindByPhone(ctx context.Context, phone string) (domain.User, error)
+	UpdateById(ctx context.Context, id int64, birthday string, nickname string, me string) error
+}
+
+// CachedUserRepository 带缓存的UserRepository
+type CachedUserRepository struct {
+	userDao   dao.UserDAO
 	userCache cache.UserCache
 }
 
-// NewUserRepository 构建UserRepository
-func NewUserRepository(dao *dao.UserDAO, cache *cache.UserCache) *UserRepository {
-	return &UserRepository{
+// NewCachedUserRepository 构建UserRepository
+func NewCachedUserRepository(dao dao.UserDAO, cache cache.UserCache) UserRepository {
+	return &CachedUserRepository{
 		userDao:   dao,
-		userCache: *cache,
+		userCache: cache,
 	}
 }
 
 // Create 创建用户
-func (repo *UserRepository) Create(ctx context.Context, user domain.User) error {
+func (repo *CachedUserRepository) Create(ctx context.Context, user domain.User) error {
 	return repo.userDao.Insert(ctx, dao.User{
 		Email: sql.NullString{
 			String: user.Email,
@@ -40,7 +49,7 @@ func (repo *UserRepository) Create(ctx context.Context, user domain.User) error 
 }
 
 // FindByEmail 根据邮箱查找用户
-func (repo *UserRepository) FindByEmail(ctx context.Context, email string) (domain.User, error) {
+func (repo *CachedUserRepository) FindByEmail(ctx context.Context, email string) (domain.User, error) {
 	user, err := repo.userDao.FindByEmail(ctx, email)
 	if err != nil {
 		return domain.User{}, err
@@ -53,7 +62,7 @@ func (repo *UserRepository) FindByEmail(ctx context.Context, email string) (doma
 }
 
 // UpdateById 根据id更新用户信息
-func (repo *UserRepository) UpdateById(ctx context.Context, id int64, birthday string, nickname string, me string) error {
+func (repo *CachedUserRepository) UpdateById(ctx context.Context, id int64, birthday string, nickname string, me string) error {
 	user, err := repo.userDao.FindById(ctx, id)
 	if err != nil {
 		return err
@@ -68,7 +77,7 @@ func (repo *UserRepository) UpdateById(ctx context.Context, id int64, birthday s
 }
 
 // FindById 根据id查找用户
-func (repo *UserRepository) FindById(ctx context.Context, id int64) (domain.User, error) {
+func (repo *CachedUserRepository) FindById(ctx context.Context, id int64) (domain.User, error) {
 	// 先从缓存中查找
 	cacheById, err := repo.userCache.GetById(ctx, id)
 	// 封装一个从数据库中查找的方法, 定义后不会立即执行, 只有在调用时才会执行
@@ -117,7 +126,7 @@ func (repo *UserRepository) FindById(ctx context.Context, id int64) (domain.User
 	}
 }
 
-func (repo *UserRepository) FindByPhone(ctx context.Context, phone string) (domain.User, error) {
+func (repo *CachedUserRepository) FindByPhone(ctx context.Context, phone string) (domain.User, error) {
 	byPhone, err := repo.userDao.FindByPhone(ctx, phone)
 	if err != nil {
 		slog.Error("根据手机号查找用户失败", "phone", phone)

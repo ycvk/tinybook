@@ -14,19 +14,27 @@ var (
 	ErrorUserExist  = repository.ErrorUserExist
 )
 
-type UserService struct {
-	userRepo *repository.UserRepository
+type UserService interface {
+	Signup(ctx *gin.Context, user domain.User) error
+	Login(ctx *gin.Context, email string, password string) (domain.User, error)
+	Edit(ctx *gin.Context, user domain.User) error
+	Profile(ctx *gin.Context, userId int64) (domain.User, error)
+	LoginOrSignup(ctx *gin.Context, phone string) (domain.User, error)
+}
+
+type userService struct {
+	userRepo repository.UserRepository
 }
 
 // NewUserService 构建UserService
-func NewUserService(userRepository *repository.UserRepository) *UserService {
-	return &UserService{
+func NewUserService(userRepository repository.UserRepository) UserService {
+	return &userService{
 		userRepo: userRepository,
 	}
 }
 
 // Signup 注册
-func (userService *UserService) Signup(ctx *gin.Context, user domain.User) error {
+func (userService *userService) Signup(ctx *gin.Context, user domain.User) error {
 	password := user.ValidatePassword()
 	email := user.ValidateEmail()
 	if !email {
@@ -47,7 +55,7 @@ func (userService *UserService) Signup(ctx *gin.Context, user domain.User) error
 }
 
 // Login 登录
-func (userService *UserService) Login(ctx *gin.Context, email string, password string) (domain.User, error) {
+func (userService *userService) Login(ctx *gin.Context, email string, password string) (domain.User, error) {
 	byEmail, err := userService.userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		return domain.User{}, err
@@ -61,7 +69,7 @@ func (userService *UserService) Login(ctx *gin.Context, email string, password s
 }
 
 // Edit 编辑
-func (userService *UserService) Edit(ctx *gin.Context, user domain.User) error {
+func (userService *userService) Edit(ctx *gin.Context, user domain.User) error {
 	birthday := user.ValidateBirthday()
 	nickname := user.ValidateNickname()
 	aboutMe := user.ValidateAboutMe()
@@ -82,12 +90,12 @@ func (userService *UserService) Edit(ctx *gin.Context, user domain.User) error {
 }
 
 // Profile 个人信息
-func (userService *UserService) Profile(ctx *gin.Context, userId int64) (domain.User, error) {
+func (userService *userService) Profile(ctx *gin.Context, userId int64) (domain.User, error) {
 	return userService.userRepo.FindById(ctx, userId)
 }
 
 // LoginOrSignup 登录或注册
-func (userService *UserService) LoginOrSignup(ctx *gin.Context, phone string) (domain.User, error) {
+func (userService *userService) LoginOrSignup(ctx *gin.Context, phone string) (domain.User, error) {
 	byPhone, err := userService.userRepo.FindByPhone(ctx, phone)
 	if err != nil {
 		if err.Error() == ErrUserNotFound {

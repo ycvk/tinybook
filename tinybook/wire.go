@@ -20,9 +20,9 @@ func InitWebServer() *gin.Engine {
 		// 初始化redis 和 db
 		ioc.InitRedis, ioc.InitDB,
 		// 初始化user模块
-		cache.NewUserCache, dao.NewUserDAO, repository.NewUserRepository, service.NewUserService,
+		cache.NewRedisUserCache, dao.NewGormUserDAO, repository.NewCachedUserRepository, service.NewUserService,
 		// 初始化code模块
-		cache.NewCodeCache, repository.NewCodeRepository, service.NewCodeService, localsms.NewService,
+		cache.NewRedisCodeCache, repository.NewCachedCodeRepository, service.NewCodeService, localsms.NewService,
 		// 初始化handler
 		web.NewUserHandler,
 		// 初始化web

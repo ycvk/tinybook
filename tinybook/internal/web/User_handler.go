@@ -19,8 +19,8 @@ const (
 )
 
 type UserHandler struct {
-	userService *service.UserService
-	codeService *service.CodeService
+	userService service.UserService
+	codeService service.CodeService
 }
 
 type UserClaims struct {
@@ -29,7 +29,7 @@ type UserClaims struct {
 	UserAgent string `json:"userAgent"`
 }
 
-func NewUserHandler(userService *service.UserService, codeService *service.CodeService) *UserHandler {
+func NewUserHandler(userService service.UserService, codeService service.CodeService) *UserHandler {
 	return &UserHandler{
 		userService: userService,
 		codeService: codeService,
