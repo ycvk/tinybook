@@ -4,10 +4,12 @@ Golang class homework in Geek Space.
 
 ## Table of Contents
 
-- [Week01: 实现切片的删除操作](#Week01)
-- [Week02: 实现用户信息编辑功能](#Week02)
-- [Week03: 部署方案修改](#Week03)
-- [Week04：引入本地缓存](#Week04)
+<ul>
+    <li><a href="#Week01">Week01: 实现切片的删除操作</a></li>
+    <li><a href="#Week02">Week02: 实现用户信息编辑功能</a></li>
+    <li><a href="#Week03">Week03: 部署方案修改</a></li>
+    <li><a href="#Week04">Week04：引入本地缓存</a></li>
+</ul>
 
 ---
 
