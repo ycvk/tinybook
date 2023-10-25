@@ -9,6 +9,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"log/slog"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -17,6 +18,7 @@ var (
 	luaSetCode string
 	//go:embed lua/verify_code.lua
 	luaVerifyCode string
+	rwMutex       sync.RWMutex
 )
 
 var ErrCodeVerifyTooMany = errors.New("验证码错误次数过多, 请稍后重试")
@@ -40,6 +42,9 @@ func (l *LocalCodeCache) SetCode(ctx context.Context, phone, biz, code, timeInte
 		return err
 	}
 	s := key(biz, phone)
+	//加写锁, 防止并发写入
+	rwMutex.Lock()
+	defer rwMutex.Unlock()
 	// 检查是否可以发送下次验证码
 	flag, b := l.client.Get(s + "-ttl")
 	if b && flag.(bool) {
@@ -66,6 +71,9 @@ func (l *LocalCodeCache) SetCode(ctx context.Context, phone, biz, code, timeInte
 // 再检查验证码是否正确, 如果正确, 删除验证码
 func (l *LocalCodeCache) VerifyCode(ctx context.Context, phone, biz, code string) (bool, error) {
 	key := key(biz, phone)
+	// 加写锁, 防止并发
+	rwMutex.Lock()
+	defer rwMutex.Unlock()
 	// 检查是否超过次数
 	cnt, ok := l.client.Get(key + "-limit")
 	if !ok {

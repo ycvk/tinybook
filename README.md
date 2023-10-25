@@ -183,7 +183,7 @@ Golang class homework in Geek Space.
 
 - [service 层](https://github.com/ycvk/geek_homework/blob/week04/tinybook/internal/service/code.go)
 - [repository 层](https://github.com/ycvk/geek_homework/blob/week04/tinybook/internal/repository/code.go)
-- [cache 层](https://github.com/ycvk/geek_homework/blob/d6f037683884b41ccb56c20bc8f6425fe8fe8ad6/tinybook/internal/repository/cache/code.go#L29-L94) (
+- [cache 层](https://github.com/ycvk/geek_homework/blob/d6f037683884b41ccb56c20bc8f6425fe8fe8ad6/tinybook/internal/repository/cache/code.go#L31-L102) (
   使用 `theine-go` 作为本地缓存, 逻辑详见代码注释)
 - [wire DI 层](https://github.com/ycvk/geek_homework/blob/d6f037683884b41ccb56c20bc8f6425fe8fe8ad6/tinybook/wire.go#L25) (
   依赖注入时, 使用 `LocalCodeCache` 替换 `CodeRedisCache`)
