@@ -146,7 +146,7 @@ Golang class homework in Geek Space.
 
 ### 技术选型
 
-#### 热门本地缓存库一览
+#### 目前热门本地缓存库
 
 [freecache](https://github.com/coocood/freecache)
 
@@ -183,9 +183,9 @@ Golang class homework in Geek Space.
 
 - [service 层](https://github.com/ycvk/geek_homework/blob/week04/tinybook/internal/service/code.go)
 - [repository 层](https://github.com/ycvk/geek_homework/blob/week04/tinybook/internal/repository/code.go)
-- [cache 层](https://github.com/ycvk/geek_homework/blob/d6f037683884b41ccb56c20bc8f6425fe8fe8ad6/tinybook/internal/repository/cache/code.go#L31-L102) (
+- [cache 层](https://github.com/ycvk/geek_homework/blob/80690ff380c90b9bf1b01f7f7e3e39f176561f32/tinybook/internal/repository/cache/code.go#L31-L102) (
   使用 `theine-go` 作为本地缓存, 逻辑详见代码注释)
-- [wire DI 层](https://github.com/ycvk/geek_homework/blob/d6f037683884b41ccb56c20bc8f6425fe8fe8ad6/tinybook/wire.go#L25) (
+- [wire DI 层](https://github.com/ycvk/geek_homework/blob/80690ff380c90b9bf1b01f7f7e3e39f176561f32/tinybook/wire.go#L25) (
   依赖注入时, 使用 `LocalCodeCache` 替换 `CodeRedisCache`)
 
 #### 测试结果
