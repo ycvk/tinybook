@@ -5,6 +5,7 @@ import (
 	"geek_homework/tinybook/internal/web"
 	"geek_homework/tinybook/internal/web/middleware"
 	"geek_homework/tinybook/pkg/ginx/middleware/ratelimit"
+	"geek_homework/tinybook/pkg/limiter"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	redisSession "github.com/gin-contrib/sessions/redis"
@@ -51,8 +52,7 @@ func initLoginJWT() gin.HandlerFunc {
 }
 
 func initRateLimit(redisClient redis.Cmdable) gin.HandlerFunc {
-	return ratelimit.NewBuilder(redisClient, time.Second, 5).Build() // 一秒钟限制5次
-
+	return ratelimit.NewBuilder(limiter.NewRedisSlideWindowLimiter(redisClient, time.Second, 5)).Build() // 一秒钟限制5次
 }
 
 // initLoginSession 初始化登录session
