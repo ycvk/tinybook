@@ -7,15 +7,15 @@ import (
 	"sync/atomic"
 )
 
-type FailoverTimeoutSMSService struct {
+type TimeoutFailoverSMSService struct {
 	services  []sms.Service
 	idx       int32 //当前使用的服务的下标
 	cnt       int32 //当前服务的失败次数
 	threshold int32 //失败次数的阈值
 }
 
-func NewFailoverTimeoutSMSService(threshold int32, services ...sms.Service) *FailoverTimeoutSMSService {
-	return &FailoverTimeoutSMSService{
+func NewTimeoutFailoverSMSService(threshold int32, services ...sms.Service) *TimeoutFailoverSMSService {
+	return &TimeoutFailoverSMSService{
 		services:  services,
 		idx:       0,
 		cnt:       0,
@@ -23,7 +23,7 @@ func NewFailoverTimeoutSMSService(threshold int32, services ...sms.Service) *Fai
 	}
 }
 
-func (f FailoverTimeoutSMSService) Send(ctx context.Context, tplId string, args []string, numbers ...string) error {
+func (f TimeoutFailoverSMSService) Send(ctx context.Context, tplId string, args []string, numbers ...string) error {
 	idx := atomic.LoadInt32(&f.idx)
 	cnt := atomic.LoadInt32(&f.cnt)
 	// 如果当前服务的失败次数超过了阈值，那么就切换到下一个服务
