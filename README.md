@@ -260,10 +260,8 @@ Golang class homework in Geek Space.
 
 具体来说，每次重试的间隔计算公式为：
 
-$
-\text{Interval} = \text{BaseInterval} \times \text{Multiplier}^\text{retry number} \times (1 -
-\text{RandomizationFactor} + \text{random factor})
-$
+$$\text{Interval} = \text{BaseInterval} \times \text{Multiplier}^\text{retry number} \times (1 -
+\text{RandomizationFactor} + \text{random factor})$$
 
 其中，`random factor` 是一个 [0, 2 * `RandomizationFactor`] 范围内的随机数。
 
