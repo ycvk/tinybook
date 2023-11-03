@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"log/slog"
 	"sync"
 	"time"
 )
@@ -43,9 +44,10 @@ func NewErrorRateMonitor(initialErrRateThreshold float64, maxErrRateThreshold fl
 
 // adjustErrorRateAndThreshold 定期调整错误率和阈值
 func (erm *ErrorRateMonitor) adjustErrorRateAndThreshold() {
-	ticker := time.NewTicker(1 * time.Minute) // 每分钟调整一次
+	ticker := time.NewTicker(erm.timeWindowDuration) // 监控的粒度
 	for {
 		<-ticker.C
+		slog.Info("开始调整错误率和阈值")
 		erm.rwMutex.Lock()
 		erm.cleanUpOldResults()  // 清理过时的结果
 		erm.calculateErrorRate() // 计算当前错误率
@@ -79,6 +81,7 @@ func (erm *ErrorRateMonitor) calculateErrorRate() {
 	total := len(erm.results)
 	if total > 0 {
 		erm.errorRate = float64(failures) / float64(total)
+		slog.Info("错误率", "errorRate", erm.errorRate)
 	}
 }
 

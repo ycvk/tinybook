@@ -67,8 +67,8 @@ func (f *AsyncFailoverSMSService) Send(ctx context.Context, tplId string, args [
 	f.retryTh.RecordResult(errors.Is(err, nil))
 	// 检查错误率是否超过阈值
 	rate := f.retryTh.CheckErrorRate()
-	if rate {
-		// 如果超过阈值，将请求转储到数据库，后续再另外启动一个 goroutine 异步发送出去
+	if rate && err != nil {
+		// 如果超过阈值并且此send请求失败，将请求转储到数据库，后续再另外启动一个 goroutine 异步发送出去
 		err := f.smsRepo.Save(ctx, tplId, args, numbers...)
 		if err != nil {
 			// 存储到数据库失败，直接返回error
