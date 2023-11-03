@@ -19,9 +19,9 @@ type RetryTask struct {
 	RandomizationFactor float64       // 随机化因素，用于避免网络拥塞
 }
 
-func NewRetryTask() AsyncRetry {
+func NewRetryTask(max int) AsyncRetry {
 	return &RetryTask{
-		MaxRetries:          3,                      // 最大重试次数
+		MaxRetries:          max,                    // 最大重试次数
 		BaseInterval:        500 * time.Millisecond, // 基础间隔时间为500毫秒
 		Multiplier:          2,                      // 间隔增加的倍数，以2为例，在无随机情况下，每次重试的间隔时间为：0.5秒、1秒、2秒、4秒
 		RandomizationFactor: 0.5,                    // 随机化因素，用于避免网络拥塞，也为防止雷鸣效应，0.5表示实际间隔将随机地增加或减少最多50%
