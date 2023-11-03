@@ -12,7 +12,6 @@ import (
 	"github.com/zeebo/assert"
 	"go.uber.org/mock/gomock"
 	"testing"
-	"time"
 )
 
 func TestAsyncFailoverSMSService_Send(t *testing.T) {
@@ -27,9 +26,14 @@ func TestAsyncFailoverSMSService_Send(t *testing.T) {
 				smsServ := smsmocks.NewMockService(controller)
 				mockLimiter := limitermocks.NewMockLimiter(controller)
 				smsRepository := repomocks.NewMockSMSRepository(controller)
+				retry := NewMockAsyncRetry(controller)
+				//monitor := NewMockErrorMonitor(controller)
+				//monitor.EXPECT().RecordResult(gomock.Any())
+				retry.EXPECT().RecordResult(gomock.Any())
+				retry.EXPECT().CheckErrorRate().Return(false)
 				smsServ.EXPECT().Send(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				mockLimiter.EXPECT().Limit(gomock.Any(), gomock.Any()).Return(false, nil)
-				return smsServ, smsRepository, mockLimiter, nil
+				return smsServ, smsRepository, mockLimiter, retry
 			},
 			expectedErr: nil,
 		},
@@ -40,6 +44,8 @@ func TestAsyncFailoverSMSService_Send(t *testing.T) {
 				mockLimiter := limitermocks.NewMockLimiter(controller)
 				smsRepository := repomocks.NewMockSMSRepository(controller)
 				retry := NewMockAsyncRetry(controller)
+				retry.EXPECT().RecordResult(gomock.Any())
+				retry.EXPECT().CheckErrorRate().Return(false)
 				mockLimiter.EXPECT().Limit(gomock.Any(), gomock.Any()).Return(false, nil)
 				smsServ.EXPECT().Send(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("发送失败"))
 				retry.EXPECT().StartRetryLoop(gomock.Any()).Return(true, nil)
@@ -54,6 +60,8 @@ func TestAsyncFailoverSMSService_Send(t *testing.T) {
 				mockLimiter := limitermocks.NewMockLimiter(controller)
 				smsRepository := repomocks.NewMockSMSRepository(controller)
 				retry := NewMockAsyncRetry(controller)
+				retry.EXPECT().RecordResult(gomock.Any())
+				retry.EXPECT().CheckErrorRate().Return(false)
 				mockLimiter.EXPECT().Limit(gomock.Any(), gomock.Any()).Return(false, nil)
 				smsServ.EXPECT().Send(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("发送失败"))
 				retry.EXPECT().StartRetryLoop(gomock.Any()).Return(false, errors.New("重试失败"))
@@ -68,6 +76,8 @@ func TestAsyncFailoverSMSService_Send(t *testing.T) {
 				mockLimiter := limitermocks.NewMockLimiter(controller)
 				smsRepository := repomocks.NewMockSMSRepository(controller)
 				retry := NewMockAsyncRetry(controller)
+				retry.EXPECT().RecordResult(gomock.Any())
+				retry.EXPECT().CheckErrorRate().Return(false)
 				mockLimiter.EXPECT().Limit(gomock.Any(), gomock.Any()).Return(false, nil)
 				smsServ.EXPECT().Send(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("发送失败"))
 				retry.EXPECT().StartRetryLoop(gomock.Any()).Return(true, nil)
@@ -83,6 +93,8 @@ func TestAsyncFailoverSMSService_Send(t *testing.T) {
 				mockLimiter := limitermocks.NewMockLimiter(controller)
 				smsRepository := repomocks.NewMockSMSRepository(controller)
 				retry := NewMockAsyncRetry(controller)
+				retry.EXPECT().RecordResult(gomock.Any())
+				retry.EXPECT().CheckErrorRate().Return(false)
 				mockLimiter.EXPECT().Limit(gomock.Any(), gomock.Any()).Return(false, nil)
 				smsServ.EXPECT().Send(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("发送失败"))
 				retry.EXPECT().StartRetryLoop(gomock.Any()).Return(true, nil)
@@ -110,6 +122,8 @@ func TestAsyncFailoverSMSService_Send(t *testing.T) {
 				mockLimiter := limitermocks.NewMockLimiter(controller)
 				smsRepository := repomocks.NewMockSMSRepository(controller)
 				retry := NewMockAsyncRetry(controller)
+				retry.EXPECT().RecordResult(gomock.Any())
+				retry.EXPECT().CheckErrorRate().Return(false)
 				mockLimiter.EXPECT().Limit(gomock.Any(), gomock.Any()).Return(true, nil)
 				smsRepository.EXPECT().Save(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				retry.EXPECT().StartRetryLoop(gomock.Any()).Return(true, nil)
@@ -126,6 +140,8 @@ func TestAsyncFailoverSMSService_Send(t *testing.T) {
 				mockLimiter := limitermocks.NewMockLimiter(controller)
 				smsRepository := repomocks.NewMockSMSRepository(controller)
 				retry := NewMockAsyncRetry(controller)
+				retry.EXPECT().RecordResult(gomock.Any())
+				retry.EXPECT().CheckErrorRate().Return(false)
 				mockLimiter.EXPECT().Limit(gomock.Any(), gomock.Any()).Return(true, nil)
 				smsRepository.EXPECT().Save(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				retry.EXPECT().StartRetryLoop(gomock.Any()).Return(false, errors.New("重试失败"))
@@ -141,11 +157,11 @@ func TestAsyncFailoverSMSService_Send(t *testing.T) {
 			defer ctrl.Finish()
 			smsService, smsrepo, l, retry := tc.mock(ctrl)
 			// 错误率监控器
-			monitor := NewErrorRateMonitor(0.3, 0.5, 30*time.Second)
+			//monitor := NewErrorRateMonitor(0.3, 0.5, 30*time.Second)
 			// 重试任务
 			//retryTask := NewRetryTask(3)
 			// 异步重试服务
-			failoverSMSService := NewAsyncFailoverSMSService(l, smsService, smsrepo, monitor, retry)
+			failoverSMSService := NewAsyncFailoverSMSService(l, smsService, smsrepo, retry)
 
 			err := failoverSMSService.Send(context.Background(), "test", []string{"778899"}, "13011223344")
 			if err != nil {

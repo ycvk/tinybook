@@ -29,5 +29,7 @@ mock:
 	@mockgen -source=pkg/limiter/types.go -package=limitermocks -destination=pkg/limiter/mocks/limiter_mock.go
 	# 生成sms async retry mock文件
 	@mockgen -source=internal/service/sms/failover/retry/retry_task.go -package=retry -destination=internal/service/sms/failover/retry/async_retry_mock.go
+	# 生成sms error monitor mock文件
+	@mockgen -source=internal/service/sms/failover/retry/error_rate_monitor.go -package=retry -destination=internal/service/sms/failover/retry/error_rate_monitor_mock.go
 	# 解决依赖
 	@go mod tidy

@@ -10,6 +10,8 @@ import (
 
 type AsyncRetry interface {
 	StartRetryLoop(task Task) (bool, error)
+	RecordResult(success bool)
+	CheckErrorRate() bool
 }
 
 type RetryTask struct {
@@ -17,14 +19,16 @@ type RetryTask struct {
 	BaseInterval        time.Duration // 基础间隔时间
 	Multiplier          float64       // 间隔增加的倍数
 	RandomizationFactor float64       // 随机化因素，用于避免网络拥塞
+	ErrRateMonitor      ErrorMonitor  // 错误率监控器
 }
 
-func NewRetryTask(max int) AsyncRetry {
+func NewRetryTask(max int, monitor ErrorMonitor) AsyncRetry {
 	return &RetryTask{
 		MaxRetries:          max,                    // 最大重试次数
 		BaseInterval:        500 * time.Millisecond, // 基础间隔时间为500毫秒
 		Multiplier:          2,                      // 间隔增加的倍数，以2为例，在无随机情况下，每次重试的间隔时间为：0.5秒、1秒、2秒、4秒
 		RandomizationFactor: 0.5,                    // 随机化因素，用于避免网络拥塞，也为防止雷鸣效应，0.5表示实际间隔将随机地增加或减少最多50%
+		ErrRateMonitor:      monitor,
 	}
 }
 
@@ -49,6 +53,8 @@ func (r *RetryTask) StartRetryLoop(task Task) (bool, error) {
 	for {
 		err := task()
 		if err != nil {
+			// 任务执行失败，记录结果
+			r.ErrRateMonitor.RecordResult(false)
 			if retries < r.MaxRetries {
 				// 如果任务执行失败，且重试次数未达到最大重试次数，等待一段时间后重试
 				time.Sleep(exponentialBackoff(retries, r))
@@ -59,8 +65,20 @@ func (r *RetryTask) StartRetryLoop(task Task) (bool, error) {
 				return false, errors.New("最大重试后任务失败")
 			}
 		} else {
+			// 任务执行成功，记录结果
+			r.ErrRateMonitor.RecordResult(true)
 			// 任务执行成功，退出循环
 			return true, nil
 		}
 	}
+}
+
+func (r *RetryTask) RecordResult(success bool) {
+	// 记录结果
+	r.ErrRateMonitor.RecordResult(success)
+}
+
+func (r *RetryTask) CheckErrorRate() bool {
+	// 检查错误率是否超过阈值
+	return r.ErrRateMonitor.CheckErrorRate()
 }

@@ -10,22 +10,20 @@ import (
 )
 
 type AsyncFailoverSMSService struct {
-	services       sms.Service
-	smsRepo        repository.SMSRepository
-	limiter        limiter.Limiter   // 限流器
-	limitKey       string            // 限流器的key
-	errRateMonitor *ErrorRateMonitor // 错误率监控器
-	retryTh        AsyncRetry        // 重试任务
+	services sms.Service
+	smsRepo  repository.SMSRepository
+	limiter  limiter.Limiter // 限流器
+	limitKey string          // 限流器的key
+	retryTh  AsyncRetry      // 重试任务
 }
 
-func NewAsyncFailoverSMSService(limiter limiter.Limiter, services sms.Service, smsRe repository.SMSRepository, errMonitor *ErrorRateMonitor, task AsyncRetry) sms.Service {
+func NewAsyncFailoverSMSService(limiter limiter.Limiter, services sms.Service, smsRe repository.SMSRepository, task AsyncRetry) sms.Service {
 	return &AsyncFailoverSMSService{
-		services:       services,
-		smsRepo:        smsRe,
-		errRateMonitor: errMonitor,
-		retryTh:        task,
-		limiter:        limiter,
-		limitKey:       "failover_async_sms", // 限流器的key
+		services: services,
+		smsRepo:  smsRe,
+		retryTh:  task,
+		limiter:  limiter,
+		limitKey: "failover_async_sms", // 限流器的key
 	}
 }
 
@@ -66,9 +64,9 @@ func (f *AsyncFailoverSMSService) Send(ctx context.Context, tplId string, args [
 	// 如果没有限流，直接发送等待结果
 	err = f.services.Send(ctx, tplId, args, numbers...)
 	// 记录发送结果到错误率监控器
-	f.errRateMonitor.RecordResult(errors.Is(err, nil))
+	f.retryTh.RecordResult(errors.Is(err, nil))
 	// 检查错误率是否超过阈值
-	rate := f.errRateMonitor.CheckErrorRate()
+	rate := f.retryTh.CheckErrorRate()
 	if rate {
 		// 如果超过阈值，将请求转储到数据库，后续再另外启动一个 goroutine 异步发送出去
 		err := f.smsRepo.Save(ctx, tplId, args, numbers...)

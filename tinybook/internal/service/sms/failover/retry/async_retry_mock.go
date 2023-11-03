@@ -37,6 +37,32 @@ func (m *MockAsyncRetry) EXPECT() *MockAsyncRetryMockRecorder {
 	return m.recorder
 }
 
+// CheckErrorRate mocks base method.
+func (m *MockAsyncRetry) CheckErrorRate() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckErrorRate")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// CheckErrorRate indicates an expected call of CheckErrorRate.
+func (mr *MockAsyncRetryMockRecorder) CheckErrorRate() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckErrorRate", reflect.TypeOf((*MockAsyncRetry)(nil).CheckErrorRate))
+}
+
+// RecordResult mocks base method.
+func (m *MockAsyncRetry) RecordResult(success bool) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "RecordResult", success)
+}
+
+// RecordResult indicates an expected call of RecordResult.
+func (mr *MockAsyncRetryMockRecorder) RecordResult(success any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecordResult", reflect.TypeOf((*MockAsyncRetry)(nil).RecordResult), success)
+}
+
 // StartRetryLoop mocks base method.
 func (m *MockAsyncRetry) StartRetryLoop(task Task) (bool, error) {
 	m.ctrl.T.Helper()

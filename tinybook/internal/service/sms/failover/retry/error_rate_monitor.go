@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+type ErrorMonitor interface {
+	RecordResult(success bool) // 记录结果
+	CheckErrorRate() bool      // 检查错误率是否超过阈值
+}
+
 // TimeStampedResult 时间戳结果，记录每次调用的成功或失败与时间
 type TimeStampedResult struct {
 	success bool
