@@ -26,7 +26,7 @@ type ErrorRateMonitor struct {
 func NewErrorRateMonitor(initialErrRateThreshold float64, maxErrRateThreshold float64, duration time.Duration) *ErrorRateMonitor {
 	erm := &ErrorRateMonitor{
 		windowStart:               time.Now(),
-		timeWindowDuration:        duration,
+		timeWindowDuration:        duration, // 时间窗口大小，决定了监控的粒度
 		threshold:                 initialErrRateThreshold,
 		initialErrorRateThreshold: initialErrRateThreshold,
 		maxErrorRateThreshold:     maxErrRateThreshold,

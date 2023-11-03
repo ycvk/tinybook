@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+type AsyncRetry interface {
+	StartRetryLoop(task Task) (bool, error)
+}
+
 type RetryTask struct {
 	MaxRetries          int           // 最大重试次数
 	BaseInterval        time.Duration // 基础间隔时间
@@ -15,9 +19,9 @@ type RetryTask struct {
 	RandomizationFactor float64       // 随机化因素，用于避免网络拥塞
 }
 
-func NewRetryTask(maxRetries int) *RetryTask {
+func NewRetryTask() AsyncRetry {
 	return &RetryTask{
-		MaxRetries:          maxRetries,             // 最大重试次数
+		MaxRetries:          3,                      // 最大重试次数
 		BaseInterval:        500 * time.Millisecond, // 基础间隔时间为500毫秒
 		Multiplier:          2,                      // 间隔增加的倍数，以2为例，在无随机情况下，每次重试的间隔时间为：0.5秒、1秒、2秒、4秒
 		RandomizationFactor: 0.5,                    // 随机化因素，用于避免网络拥塞，也为防止雷鸣效应，0.5表示实际间隔将随机地增加或减少最多50%
@@ -40,23 +44,23 @@ func exponentialBackoff(retries int, config *RetryTask) time.Duration {
 }
 
 // StartRetryLoop 启动一个循环,根据重试策略重试任务
-func (r *RetryTask) StartRetryLoop(task Task) error {
+func (r *RetryTask) StartRetryLoop(task Task) (bool, error) {
 	retries := 0
 	for {
 		err := task()
-		if err != nil && retries < r.MaxRetries {
-			// 如果任务执行失败，且重试次数未达到最大重试次数，等待一段时间后重试
-			time.Sleep(exponentialBackoff(retries, r))
-			retries++
+		if err != nil {
+			if retries < r.MaxRetries {
+				// 如果任务执行失败，且重试次数未达到最大重试次数，等待一段时间后重试
+				time.Sleep(exponentialBackoff(retries, r))
+				retries++
+			} else {
+				// 重试次数达到最大重试次数，任务执行失败
+				slog.Error("最大重试后任务失败", "maxRetries", r.MaxRetries)
+				return false, errors.New("最大重试后任务失败")
+			}
 		} else {
-			break
+			// 任务执行成功，退出循环
+			return true, nil
 		}
-	}
-	if retries >= r.MaxRetries {
-		slog.Error("最大重试后任务失败", "maxRetries", r.MaxRetries)
-		return errors.New("最大重试后任务失败")
-	} else {
-		// 任务执行成功
-		return nil
 	}
 }

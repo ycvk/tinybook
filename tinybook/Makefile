@@ -23,7 +23,11 @@ mock:
 	@mockgen -source=internal/repository/user.go -package=repomocks -destination=internal/repository/mocks/user_mock.go
 	# 生成code repository mock文件
 	@mockgen -source=internal/repository/code.go -package=repomocks -destination=internal/repository/mocks/code_mock.go
+	# 生成sms repository mock文件
+	@mockgen -source=internal/repository/sms.go -package=repomocks -destination=internal/repository/mocks/sms_mock.go
 	# 生成limiter mock文件
 	@mockgen -source=pkg/limiter/types.go -package=limitermocks -destination=pkg/limiter/mocks/limiter_mock.go
+	# 生成sms async retry mock文件
+	@mockgen -source=internal/service/sms/failover/retry/retry_task.go -package=retry -destination=internal/service/sms/failover/retry/async_retry_mock.go
 	# 解决依赖
 	@go mod tidy

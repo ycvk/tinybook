@@ -15,8 +15,6 @@ var DuplicatePhoneError = repository.DuplicatePhoneError
 type CodeService interface {
 	Send(ctx context.Context, biz, phone, timeInterval string) error
 	Verify(ctx context.Context, biz, phone, code string) (bool, error)
-	WaitSend(ctx context.Context, phone ...string) error
-	DelSent(ctx context.Context, phone string) error
 }
 
 type codeService struct {
@@ -29,14 +27,6 @@ func NewCodeService(repo repository.CodeRepository, smsService sms.Service) Code
 		repo:       repo,
 		smsService: smsService,
 	}
-}
-
-func (codeService *codeService) WaitSend(ctx context.Context, phone ...string) error {
-	return codeService.repo.Create(ctx, phone...)
-}
-
-func (codeService *codeService) DelSent(ctx context.Context, phone string) error {
-	return codeService.repo.Delete(ctx, phone)
 }
 
 func (codeService *codeService) Send(ctx context.Context, biz, phone, timeInterval string) error {

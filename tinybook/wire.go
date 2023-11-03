@@ -21,9 +21,9 @@ func InitWebServer() *gin.Engine {
 		// 初始化user模块
 		cache.NewRedisUserCache, dao.NewGormUserDAO, repository.NewCachedUserRepository, service.NewUserService,
 		// 初始化code模块
-		cache.NewLocalCodeCache, repository.NewCachedCodeRepository, service.NewCodeService, dao.NewGormCodeDAO,
+		cache.NewLocalCodeCache, repository.NewCachedCodeRepository, service.NewCodeService,
 		// 初始化sms模块
-		ioc.InitSMSService,
+		ioc.InitSMSService, repository.NewGormSMSRepository, dao.NewGormSMSDAO,
 		// 初始化handler
 		web.NewUserHandler,
 		// 初始化web

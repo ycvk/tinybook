@@ -2,7 +2,7 @@ package retry
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/service"
+	"geek_homework/tinybook/internal/repository"
 	"geek_homework/tinybook/internal/service/sms"
 	"geek_homework/tinybook/pkg/limiter"
 	"github.com/cockroachdb/errors"
@@ -11,16 +11,17 @@ import (
 
 type AsyncFailoverSMSService struct {
 	services       sms.Service
-	codeService    service.CodeService
+	smsRepo        repository.SMSRepository
 	limiter        limiter.Limiter   // 限流器
 	limitKey       string            // 限流器的key
 	errRateMonitor *ErrorRateMonitor // 错误率监控器
-	retryTh        RetryTask         // 重试任务
+	retryTh        AsyncRetry        // 重试任务
 }
 
-func NewAsyncFailoverSMSService(limiter limiter.Limiter, services sms.Service, errMonitor *ErrorRateMonitor, task RetryTask) sms.Service {
+func NewAsyncFailoverSMSService(limiter limiter.Limiter, services sms.Service, smsRe repository.SMSRepository, errMonitor *ErrorRateMonitor, task AsyncRetry) sms.Service {
 	return &AsyncFailoverSMSService{
 		services:       services,
+		smsRepo:        smsRe,
 		errRateMonitor: errMonitor,
 		retryTh:        task,
 		limiter:        limiter,
@@ -40,7 +41,7 @@ func (f *AsyncFailoverSMSService) Send(ctx context.Context, tplId string, args [
 	}
 	// 如果限流，将请求转储到数据库，后续再另外启动一个 goroutine 异步发送出去
 	if limit {
-		err := f.codeService.WaitSend(ctx, numbers...)
+		err := f.smsRepo.Save(ctx, tplId, args, numbers...)
 		if err != nil {
 			// 存储到数据库失败，直接返回error
 			slog.Error("存储发送请求到数据库失败", "err", err)
@@ -48,12 +49,19 @@ func (f *AsyncFailoverSMSService) Send(ctx context.Context, tplId string, args [
 		}
 		// 启动一个 goroutine 去异步调用重试函数
 		go func() {
-			retryErr := f.retryTh.StartRetryLoop(retryFunc)
-			if retryErr != nil {
+			ok, retryErr := f.retryTh.StartRetryLoop(retryFunc)
+			if !ok || retryErr != nil {
 				slog.Error("重试发送短信失败", "err", retryErr)
+			} else {
+				slog.Info("重试发送短信成功")
+				// 重试成功后，删除数据库中的记录
+				delErr := f.smsRepo.Delete(ctx, tplId, args, numbers...)
+				if delErr != nil {
+					slog.Error("删除数据库中的记录失败", "err", delErr)
+				}
 			}
 		}()
-		return nil
+		return err
 	}
 	// 如果没有限流，直接发送等待结果
 	err = f.services.Send(ctx, tplId, args, numbers...)
@@ -63,7 +71,7 @@ func (f *AsyncFailoverSMSService) Send(ctx context.Context, tplId string, args [
 	rate := f.errRateMonitor.CheckErrorRate()
 	if rate {
 		// 如果超过阈值，将请求转储到数据库，后续再另外启动一个 goroutine 异步发送出去
-		err := f.codeService.WaitSend(ctx, numbers...)
+		err := f.smsRepo.Save(ctx, tplId, args, numbers...)
 		if err != nil {
 			// 存储到数据库失败，直接返回error
 			slog.Error("存储发送请求到数据库失败", "err", err)
@@ -71,9 +79,16 @@ func (f *AsyncFailoverSMSService) Send(ctx context.Context, tplId string, args [
 		}
 		// 启动一个 goroutine 去异步调用重试函数
 		go func() {
-			retryErr := f.retryTh.StartRetryLoop(retryFunc)
-			if retryErr != nil {
+			ok, retryErr := f.retryTh.StartRetryLoop(retryFunc)
+			if !ok || retryErr != nil {
 				slog.Error("重试发送短信失败", "err", retryErr)
+			} else {
+				slog.Info("重试发送短信成功")
+				// 重试成功后，删除数据库中的记录
+				delErr := f.smsRepo.Delete(ctx, tplId, args, numbers...)
+				if delErr != nil {
+					slog.Error("删除数据库中的记录失败", "err", delErr)
+				}
 			}
 		}()
 		return nil
