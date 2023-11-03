@@ -388,9 +388,50 @@ retry_intervals
         - 存储消息到数据库。
         - 启动重试机制（使用goroutine或服务）。
 
+### k8s 项目实测结果
+
 <details>
+
   <summary>👉 点击展开测试结果</summary>
 
-...待补充
+#### 1. 测试限流下的异步重试机制
+
+k8s 项目启动初始化时，在 [InitSMSService](https://github.com/ycvk/geek_homework/blob/week05/tinybook/ioc/sms.go)
+中将限流器设置为 1 分钟只能发送 1 条短信，并选用本地测试的短信服务`localsms.NewService()`，来测试限流后，异步重试机制的效果。
+
+结果如下：
+
+![test_01](https://github.com/ycvk/PicDemo/blob/main/WeChat55ce105ae905f7098d035f861459c98b.jpg?raw=true)
+
+可以看到确实是触发了限流后，操作数据库insert了一条记录，并且启动了异步重试机制。
+
+异步重试成功后，日志打印了验证码信息和重试成功的信息，随后删除了数据库中的记录。
+
+#### 2. 测试重复手机号的异步重试机制
+
+我在发送验证码前，往数据库中insert一条跟要发送的手机号一样的测试记录，来测试重复手机号的情况。
+
+结果如下：
+
+![test_02](https://github.com/ycvk/PicDemo/blob/main/WeChatb9cf24f1d446d2ff85703f4dc7e580d7.jpg?raw=true)
+
+可以在日志看到，在insert插入重复数据时，匹配到mysql的1062唯一索引错误，返回重复手机号的错误信息，并且没有触发异步重试机制。
+
+#### 3. 测试错误率超过阈值下的连续失败异步重试机制
+
+首先在 [InitSMSService](https://github.com/ycvk/geek_homework/blob/week05/tinybook/ioc/sms.go)
+中将错误率监控器改为 `monitor := retry.NewErrorRateMonitor(0.01, 0.5, 10*time.Second)`
+表示错误率阈值为 1%，窗口大小为 10 秒，来测试错误率超过阈值后，异步重试机制的效果。
+
+随后在localSMSservice的本地测试的 [send](https://github.com/ycvk/geek_homework/blob/week05/tinybook/internal/service/sms/localsms/service.go)
+方法中，让其返回错误，来模拟错误率超过阈值的情况。
+
+结果如下：
+
+![test03](https://github.com/ycvk/PicDemo/blob/main/WeChat018eabf5090e7c9943e0a68d4ac4d55f.jpg?raw=true)
+
+可以看到再连续发送了几条短信后，因为已经将`send()`方法改为永远返回错误，所以在错误率监控器中，错误率为100%，超过了阈值1%，触发了异步重试机制。
+
+insert进数据库后，开始重试，重试超过了最大次数，重试彻底失败，日志打印了重试失败的堆栈信息。
 
 </details>
