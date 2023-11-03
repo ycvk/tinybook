@@ -22,7 +22,7 @@ func (r RedisSlideWindowLimiter) Limit(ctx context.Context, key string) (bool, e
 		r.interval.Milliseconds(), r.rate, time.Now().UnixMilli()).Bool()
 }
 
-func NewRedisSlideWindowLimiter(cmd redis.Cmdable, interval time.Duration, rate int) *RedisSlideWindowLimiter {
+func NewRedisSlideWindowLimiter(cmd redis.Cmdable, interval time.Duration, rate int) Limiter {
 	return &RedisSlideWindowLimiter{
 		cmd:      cmd,
 		interval: interval,

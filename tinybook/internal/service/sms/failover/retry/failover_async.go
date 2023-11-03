@@ -12,13 +12,13 @@ import (
 type AsyncFailoverSMSService struct {
 	services       sms.Service
 	codeService    service.CodeService
-	limiter        limiter.Limiter  // 限流器
-	limitKey       string           // 限流器的key
-	errRateMonitor ErrorRateMonitor // 错误率监控器
-	retryTh        RetryTask        // 重试任务
+	limiter        limiter.Limiter   // 限流器
+	limitKey       string            // 限流器的key
+	errRateMonitor *ErrorRateMonitor // 错误率监控器
+	retryTh        RetryTask         // 重试任务
 }
 
-func NewAsyncFailoverSMSService(limiter limiter.Limiter, services sms.Service, errMonitor ErrorRateMonitor, task RetryTask) *AsyncFailoverSMSService {
+func NewAsyncFailoverSMSService(limiter limiter.Limiter, services sms.Service, errMonitor *ErrorRateMonitor, task RetryTask) sms.Service {
 	return &AsyncFailoverSMSService{
 		services:       services,
 		errRateMonitor: errMonitor,
@@ -28,7 +28,7 @@ func NewAsyncFailoverSMSService(limiter limiter.Limiter, services sms.Service, e
 	}
 }
 
-func (f AsyncFailoverSMSService) Send(ctx context.Context, tplId string, args []string, numbers ...string) error {
+func (f *AsyncFailoverSMSService) Send(ctx context.Context, tplId string, args []string, numbers ...string) error {
 	// 定义一个重试函数，用于重试发送短信
 	retryFunc := func() error {
 		return f.services.Send(ctx, tplId, args, numbers...)

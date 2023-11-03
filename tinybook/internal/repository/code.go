@@ -17,31 +17,13 @@ type CodeRepository interface {
 
 type CachedCodeRepository struct {
 	cache cache.CodeCache
+	dao   dao.CodeDAO
 }
 
-type GormCodeRepository struct {
-	dao dao.CodeDAO
-}
-
-func (g *GormCodeRepository) Create(ctx context.Context, number ...string) error {
-	codes := make([]*dao.Code, len(number))
-	for _, num := range number {
-		codes = append(codes, &dao.Code{
-			Number: num,
-		})
-	}
-	return g.dao.Insert(ctx, codes...)
-}
-
-func (g *GormCodeRepository) Delete(ctx context.Context, number string) error {
-	return g.dao.Delete(ctx, dao.Code{
-		Number: number,
-	})
-}
-
-func NewCachedCodeRepository(c cache.CodeCache) CodeRepository {
+func NewCachedCodeRepository(c cache.CodeCache, d dao.CodeDAO) CodeRepository {
 	return &CachedCodeRepository{
 		cache: c,
+		dao:   d,
 	}
 }
 
@@ -54,17 +36,17 @@ func (repo *CachedCodeRepository) Verify(ctx context.Context, biz, phone, code s
 }
 
 func (repo *CachedCodeRepository) Create(ctx context.Context, number ...string) error {
-	panic("implement me")
+	codes := make([]*dao.Code, len(number))
+	for _, num := range number {
+		codes = append(codes, &dao.Code{
+			Number: num,
+		})
+	}
+	return repo.dao.Insert(ctx, codes...)
 }
 
 func (repo *CachedCodeRepository) Delete(ctx context.Context, number string) error {
-	panic("implement me")
-}
-
-func (g *GormCodeRepository) Set(ctx context.Context, biz, phone, code, timeInterval string) error {
-	panic("implement me")
-}
-
-func (g *GormCodeRepository) Verify(ctx context.Context, biz, phone, code string) (bool, error) {
-	panic("implement me")
+	return repo.dao.Delete(ctx, dao.Code{
+		Number: number,
+	})
 }

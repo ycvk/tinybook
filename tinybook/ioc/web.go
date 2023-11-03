@@ -51,6 +51,7 @@ func initLoginJWT() gin.HandlerFunc {
 	return middlewareBuilder.Build()
 }
 
+// initRateLimit 初始化限流器
 func initRateLimit(redisClient redis.Cmdable) gin.HandlerFunc {
 	return ratelimit.NewBuilder(limiter.NewRedisSlideWindowLimiter(redisClient, time.Second, 5)).Build() // 一秒钟限制5次
 }

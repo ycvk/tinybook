@@ -22,5 +22,7 @@ func InitDB() *gorm.DB {
 			panic(err)
 		}
 	})
+	// TODO 为了方便测试，每次启动都会重新创建表 仅供测试使用
+	CreateTable(gormDB)
 	return gormDB
 }
