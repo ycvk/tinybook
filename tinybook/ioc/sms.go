@@ -16,7 +16,7 @@ func InitSMSService(cmd redis.Cmdable, repo repository.SMSRepository) sms.Servic
 
 	return retry.NewAsyncFailoverSMSService(
 		// 限流器, 30 秒钟最多发送 10 条短信
-		limiter.NewRedisSlideWindowLimiter(cmd, 300*time.Second, 1),
+		limiter.NewRedisSlideWindowLimiter(cmd, 30*time.Second, 10),
 		// 本地短信服务
 		localsms.NewService(),
 		// 短信存储库

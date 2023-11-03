@@ -47,7 +47,6 @@ func (erm *ErrorRateMonitor) adjustErrorRateAndThreshold() {
 	ticker := time.NewTicker(erm.timeWindowDuration) // 监控的粒度
 	for {
 		<-ticker.C
-		slog.Info("开始调整错误率和阈值")
 		erm.rwMutex.Lock()
 		erm.cleanUpOldResults()  // 清理过时的结果
 		erm.calculateErrorRate() // 计算当前错误率

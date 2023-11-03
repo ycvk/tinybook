@@ -3,8 +3,8 @@ kind: Deployment
 metadata:
   name: tinybook-service
 spec:
-  # 以下配置为服务副本数 2个
-  replicas: 2
+  # 以下配置为服务副本数 1个
+  replicas: 1
   selector:
     matchLabels:
       app: tinybook-service
