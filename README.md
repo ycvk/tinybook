@@ -320,7 +320,7 @@ retry_intervals
 
 ### 代码实现
 
-以下是在Go语言中实现的异步重试容错机制的组件及其逻辑：
+以下是实现的异步重试容错机制的组件及其逻辑：
 
 - **错误率监控器**:
   [error_rate_monitor.go](https://github.com/ycvk/geek_homework/blob/week05/tinybook/internal/service/sms/failover/retry/error_rate_monitor.go)
