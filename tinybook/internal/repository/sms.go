@@ -24,7 +24,7 @@ func (g GormSMSRepository) Save(ctx context.Context, tplId string, args []string
 	if err != nil {
 		return err
 	}
-	smsDaos := make([]*dao.SMS, len(numbers))
+	smsDaos := make([]*dao.SMS, 0)
 	for _, number := range numbers {
 		smsDaos = append(smsDaos, &dao.SMS{
 			TplId: tplId,
@@ -40,7 +40,7 @@ func (g GormSMSRepository) Delete(ctx context.Context, tplId string, args []stri
 	if err != nil {
 		return err
 	}
-	smsDaos := make([]*dao.SMS, len(numbers))
+	smsDaos := make([]*dao.SMS, 0)
 	for _, number := range numbers {
 		smsDaos = append(smsDaos, &dao.SMS{
 			TplId: tplId,

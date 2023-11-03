@@ -49,5 +49,9 @@ func (g *GormSMSDAO) Insert(ctx context.Context, sms ...*SMS) error {
 }
 
 func (g *GormSMSDAO) Delete(ctx context.Context, sms ...*SMS) error {
-	return g.db.WithContext(ctx).Delete(&sms).Error
+	strings := make([]string, 0, len(sms))
+	for _, sm := range sms {
+		strings = append(strings, sm.Phone)
+	}
+	return g.db.WithContext(ctx).Delete(&sms, "phone in (?)", strings).Error
 }
