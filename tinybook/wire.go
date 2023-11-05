@@ -24,8 +24,10 @@ func InitWebServer() *gin.Engine {
 		cache.NewLocalCodeCache, repository.NewCachedCodeRepository, service.NewCodeService,
 		// 初始化sms模块
 		ioc.InitSMSService, repository.NewGormSMSRepository, dao.NewGormSMSDAO,
+		// 初始化oauth2模块
+		ioc.InitWechatService,
 		// 初始化handler
-		web.NewUserHandler,
+		web.NewUserHandler, web.NewOAuth2WechatHandler,
 		// 初始化web
 		ioc.InitWebServer, ioc.InitHandlerFunc,
 	)

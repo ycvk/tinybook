@@ -15,19 +15,22 @@ import (
 	"time"
 )
 
-func InitWebServer(handlerFunc []gin.HandlerFunc, handler *web.UserHandler) *gin.Engine {
+func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler, wechatHandler *web.OAuth2WechatHandler) *gin.Engine {
 	engine := gin.Default()
 	// 注册中间件
 	engine.Use(handlerFunc...)
-	// 注册路由
-	handler.RegisterRoutes(engine)
+	// 注册用户路由
+	userHandler.RegisterRoutes(engine)
+	// 注册oauth2路由
+	wechatHandler.RegisterRoutes(engine)
 	return engine
 }
 
+// InitHandlerFunc 初始化中间件
 func InitHandlerFunc(redisClient redis.Cmdable) []gin.HandlerFunc {
-	corsConfig := initCorsConfig()
-	rateLimit := initRateLimit(redisClient)
-	loginJWT := initLoginJWT()
+	corsConfig := initCorsConfig()          // 跨域配置
+	rateLimit := initRateLimit(redisClient) // 限流器
+	loginJWT := initLoginJWT()              // 登录jwt
 	return []gin.HandlerFunc{corsConfig, rateLimit, loginJWT}
 }
 

@@ -16,6 +16,7 @@ require (
 	github.com/gocolly/colly/v2 v2.1.0
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/wire v0.5.0
+	github.com/lithammer/shortuuid/v4 v4.0.0
 	github.com/pingcap/errors v0.11.4
 	github.com/redis/go-redis/v9 v9.2.1
 	github.com/samber/lo v1.38.1
@@ -61,6 +62,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/gorilla/sessions v1.2.1 // indirect
