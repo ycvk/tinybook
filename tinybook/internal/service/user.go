@@ -20,7 +20,8 @@ type UserService interface {
 	Login(ctx context.Context, email string, password string) (domain.User, error)
 	Edit(ctx *gin.Context, user domain.User) error
 	Profile(ctx *gin.Context, userId int64) (domain.User, error)
-	LoginOrSignup(ctx *gin.Context, phone string) (domain.User, error)
+	LoginOrSignupByPhone(ctx *gin.Context, phone string) (domain.User, error)
+	LoginOrSignupByWechat(ctx *gin.Context, wechatInfo domain.WechatInfo) (domain.User, error)
 }
 
 type userService struct {
@@ -95,8 +96,8 @@ func (userService *userService) Profile(ctx *gin.Context, userId int64) (domain.
 	return userService.userRepo.FindById(ctx, userId)
 }
 
-// LoginOrSignup 登录或注册
-func (userService *userService) LoginOrSignup(ctx *gin.Context, phone string) (domain.User, error) {
+// LoginOrSignupByPhone 手机号登录或注册
+func (userService *userService) LoginOrSignupByPhone(ctx *gin.Context, phone string) (domain.User, error) {
 	byPhone, err := userService.userRepo.FindByPhone(ctx, phone)
 	if err != nil {
 		if err.Error() == ErrUserNotFound {
@@ -122,4 +123,32 @@ func (userService *userService) LoginOrSignup(ctx *gin.Context, phone string) (d
 		return domain.User{}, err
 	}
 	return byPhone, nil
+}
+
+func (userService *userService) LoginOrSignupByWechat(ctx *gin.Context, wechatInfo domain.WechatInfo) (domain.User, error) {
+	we, err := userService.userRepo.FindByWechat(ctx, wechatInfo)
+	if err != nil {
+		if err.Error() == ErrUserNotFound {
+			// 用户不存在, 注册
+			user := domain.User{
+				WechatInfo: wechatInfo,
+			}
+			createErr := userService.userRepo.Create(ctx, user)
+			if createErr != nil {
+				// 注册失败, 可能是手机号已存在, 也可能是其他原因
+				if createErr.Error() == ErrorUserExist {
+					return domain.User{}, errors.New("微信号已存在")
+				}
+				return domain.User{}, err
+			}
+			// 注册成功后再次查询
+			byWechat, findErr := userService.userRepo.FindByWechat(ctx, wechatInfo)
+			if findErr != nil {
+				return domain.User{}, err
+			}
+			return byWechat, nil
+		}
+		return domain.User{}, err
+	}
+	return we, nil
 }

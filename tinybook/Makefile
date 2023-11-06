@@ -11,6 +11,10 @@ docker:
 	@docker rmi -f ycvk/tinybook:v0.0.1 || true
 	# 构建镜像
 	@docker build -t ycvk/tinybook:v0.0.1 .
+	# 删除k8s上次部署的pod
+	@kubectl delete deployment tinybook-service || true
+	# 部署k8s pod
+	@kubectl apply -f tinybook-deployment.yaml -f tinybook-service.yaml
 
 mock:
 	# 生成user service mock文件

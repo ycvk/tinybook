@@ -8,17 +8,16 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"strings"
-	"time"
 )
 
 var ErrUserNotFound = service.ErrUserNotFound
 
 const (
-	JWTKey   = "MK7z43qKmUkY5sy9w3rQ8CygFpOSN90W"
 	bizLogin = "login"
 )
 
 type UserHandler struct {
+	JWTHandler
 	userService service.UserService
 	codeService service.CodeService
 }
@@ -93,22 +92,8 @@ func (userHandler *UserHandler) LoginJWT(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, "系统错误")
 		return
 	}
-	ctx.Header("X-Jwt-Token", tokenStr)
+	userHandler.SetJWTToken(ctx, tokenStr)
 	ctx.JSON(http.StatusOK, "登录成功")
-}
-
-// GetJWTToken 获取jwt token
-func (userHandler *UserHandler) GetJWTToken(ctx *gin.Context, user domain.User) (string, error) {
-	userClaims := UserClaims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 12)),
-		},
-		Uid:       user.Id,
-		UserAgent: ctx.Request.UserAgent(),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS512, userClaims) //生成token
-	tokenStr, err := token.SignedString([]byte(JWTKey))
-	return tokenStr, err
 }
 
 // Login 登录
@@ -274,7 +259,7 @@ func (userHandler *UserHandler) LoginSMS(ctx *gin.Context) {
 		return
 	}
 	// 调用service层的LoginOrSignup方法
-	user, err := userHandler.userService.LoginOrSignup(ctx, login.Phone)
+	user, err := userHandler.userService.LoginOrSignupByPhone(ctx, login.Phone)
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 400,
@@ -291,7 +276,7 @@ func (userHandler *UserHandler) LoginSMS(ctx *gin.Context) {
 		})
 		return
 	}
-	ctx.Header("X-Jwt-Token", tokenStr)
+	userHandler.SetJWTToken(ctx, tokenStr)
 	ctx.JSON(http.StatusOK, Result{
 		Code: 200,
 		Msg:  "登录成功",
