@@ -13,7 +13,7 @@ import (
 var ErrInvalidState = errors.New("state不匹配")
 
 type OAuth2WechatHandler struct {
-	JWTHandler
+	jwtHandler      *JWTHandler
 	wechatService   wechat.Service
 	userService     service.UserService
 	stateCookieName string
@@ -28,6 +28,7 @@ func NewOAuth2WechatHandler(service wechat.Service, userService service.UserServ
 	return &OAuth2WechatHandler{
 		wechatService:   service,
 		userService:     userService,
+		jwtHandler:      NewJWTHandler(),
 		stateCookieName: "jwt-state",
 	}
 }
@@ -88,15 +89,14 @@ func (h *OAuth2WechatHandler) Callback(context *gin.Context) {
 		})
 		return
 	}
-	jwtToken, err := h.GetJWTToken(context, byWechat)
-	if err != nil {
+	verifyErr = h.jwtHandler.SetJWTToken(context, byWechat)
+	if verifyErr != nil {
 		context.JSON(http.StatusOK, Result{
 			Code: 500,
 			Msg:  "登录失败",
 		})
 		return
 	}
-	context.Header("X-Jwt-Token", jwtToken)
 	context.JSON(http.StatusOK, Result{
 		Code: 200,
 		Msg:  "登录成功",

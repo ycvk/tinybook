@@ -37,10 +37,10 @@ func InitHandlerFunc(redisClient redis.Cmdable) []gin.HandlerFunc {
 // initCorsConfig 跨域配置
 func initCorsConfig() gin.HandlerFunc {
 	return cors.New(cors.Config{
-		AllowMethods:     []string{"POST", "GET", "OPTIONS"},        //允许跨域的方法
-		AllowHeaders:     []string{"Content-Type", "Authorization"}, // 允许跨域的Header
-		ExposeHeaders:    []string{"X-Jwt-Token"},                   // 允许访问的响应头
-		AllowCredentials: true,                                      //  允许携带cookie
+		AllowMethods:     []string{"POST", "GET", "OPTIONS"},         //允许跨域的方法
+		AllowHeaders:     []string{"Content-Type", "Authorization"},  // 允许跨域的Header
+		ExposeHeaders:    []string{"X-Jwt-Token", "X-Refresh-Token"}, // 允许访问的响应头
+		AllowCredentials: true,                                       //  允许携带cookie
 		AllowOriginFunc: func(origin string) bool { //允许跨域的域名
 			return strings.HasPrefix(origin, "http://localhost")
 		},

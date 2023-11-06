@@ -17,7 +17,7 @@ const (
 )
 
 type UserHandler struct {
-	JWTHandler
+	jwtHandler  *JWTHandler
 	userService service.UserService
 	codeService service.CodeService
 }
@@ -32,6 +32,7 @@ func NewUserHandler(userService service.UserService, codeService service.CodeSer
 	return &UserHandler{
 		userService: userService,
 		codeService: codeService,
+		jwtHandler:  NewJWTHandler(),
 	}
 }
 
@@ -86,13 +87,11 @@ func (userHandler *UserHandler) LoginJWT(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, "密码不正确")
 		return
 	}
-
-	tokenStr, jwtErr := userHandler.GetJWTToken(ctx, user)
-	if jwtErr != nil {
-		ctx.JSON(http.StatusOK, "系统错误")
+	err = userHandler.jwtHandler.SetJWTToken(ctx, user)
+	if err != nil {
+		ctx.JSON(http.StatusOK, "登录失败")
 		return
 	}
-	userHandler.SetJWTToken(ctx, tokenStr)
 	ctx.JSON(http.StatusOK, "登录成功")
 }
 
@@ -267,19 +266,44 @@ func (userHandler *UserHandler) LoginSMS(ctx *gin.Context) {
 		})
 		return
 	}
-	// 生成jwt token
-	tokenStr, jwtErr := userHandler.GetJWTToken(ctx, user)
-	if jwtErr != nil {
+	// 生成与设置jwt token
+	err = userHandler.jwtHandler.SetJWTToken(ctx, user)
+	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 400,
-			Msg:  "系统错误",
+			Msg:  "登录失败",
 		})
 		return
 	}
-	userHandler.SetJWTToken(ctx, tokenStr)
 	ctx.JSON(http.StatusOK, Result{
 		Code: 200,
 		Msg:  "登录成功",
+	})
+}
+
+// RefreshToken 刷新token 通过refresh token 刷新jwt token
+func (userHandler *UserHandler) RefreshToken(ctx *gin.Context) {
+	// 从header中获取refresh token
+	authorization := userHandler.jwtHandler.ExtractAuthorization(ctx)
+	var refreshClaims RefreshClaims
+	token, err := jwt.ParseWithClaims(authorization, &refreshClaims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(JWTKey), nil
+	})
+	if err != nil {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	if token == nil || !token.Valid {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	// 生成新的jwt token 和 refresh token
+	err = userHandler.jwtHandler.SetJWTToken(ctx, domain.User{
+		Id: refreshClaims.Uid,
+	})
+	ctx.JSON(http.StatusOK, Result{
+		Code: 200,
+		Msg:  "ok",
 	})
 }
 
@@ -292,6 +316,7 @@ func (userHandler *UserHandler) RegisterRoutes(engine *gin.Engine) {
 	group.POST("/login", userHandler.LoginJWT)
 	group.POST("/edit", userHandler.Edit)
 	group.GET("/profile", userHandler.Profile)
+	group.GET("/refresh_token", userHandler.RefreshToken)
 	group.POST("/login_sms/code/send", userHandler.SendSMSLoginCode)
 	group.POST("/login_sms", userHandler.LoginSMS)
 }
