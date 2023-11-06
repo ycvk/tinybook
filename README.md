@@ -2,9 +2,18 @@
 
 Golang class homework in Geek Space.
 
+## Table of Contents
+
+- [Week01: 实现切片的删除操作](#week01-实现切片的删除操作)
+- [Week02: 实现用户信息编辑功能](#week02-实现用户信息编辑功能)
+- [Week03: 部署方案修改](#week03-部署方案修改)
+- [Week04: 引入本地缓存](#week04-引入本地缓存)
+
 ---
 
-## [Week01：实现切片的删除操作](https://github.com/ycvk/geek_homework/tree/main/week01)
+<h2 id="Week01">Week01: 实现切片的删除操作</h2>
+
+[GitHub Link](https://github.com/ycvk/geek_homework/tree/main/week01)
 
 ### 作业要求
 
@@ -18,7 +27,9 @@ Golang class homework in Geek Space.
 
 ---
 
-## [Week02：实现用户信息编辑功能](https://github.com/ycvk/geek_homework/tree/main/tinybook)
+<h2 id="Week02">Week02: 实现用户信息编辑功能</h2>
+
+[GitHub Link](https://github.com/ycvk/geek_homework/tree/main/tinybook)
 
 ### 作业要求
 
@@ -70,7 +81,9 @@ Golang class homework in Geek Space.
 
 ---
 
-## [Week03：部署方案修改](https://github.com/ycvk/geek_homework/tree/week03/tinybook)
+<h2 id="Week03">Week03: 部署方案修改</h2>
+
+[GitHub Link](https://github.com/ycvk/geek_homework)
 
 ### 作业要求
 
@@ -112,3 +125,85 @@ Golang class homework in Geek Space.
 </details>
 
 ---
+
+<h2 id="Week04">Week04: 引入本地缓存</h2>
+
+[GitHub Link](https://github.com/ycvk/geek_homework/tree/week04)
+
+### 作业要求
+
+1. **重构现有的CodeCache**：
+    - 将当前的 `CodeCache` 改名为 `CodeRedisCache`。
+
+2. **实现本地缓存的CodeCache**：
+    - 自由选择本地缓存技术，注意体会技术选型的关键因素。
+
+3. **并发安全**：
+    - 确保在单机或开发环境下并发安全。
+
+<details>
+  <summary>👉 点击展开结果</summary>
+
+### 技术选型
+
+#### 目前热门本地缓存库
+
+[freecache](https://github.com/coocood/freecache)
+
+[bigcache](https://github.com/allegro/bigcache)
+
+[fastcache](https://github.com/VictoriaMetrics/fastcache)
+
+[ristretto](https://github.com/dgraph-io/ristretto)
+
+[go-cache](https://github.com/patrickmn/go-cache)
+
+[theine-go](https://github.com/Yiling-J/theine-go)
+
+| 缓存库       | 优点                              | 缺点                                                                   | 是否支持TTL | 内存效率 | 适用场景                | 并发安全 | 社区活跃度 |
+|-----------|---------------------------------|----------------------------------------------------------------------|---------|------|---------------------|------|-------|
+| freecache | 近似LRU淘汰，支持Key设置TTL              | 需要提前知道缓存大小，可能导致内存浪费                                                  | 是       | 中等   | 高并发、内存敏感环境          | 是    | 中等    |
+| bigcache  | 不需要提前知道缓存大小，能动态扩展               | 有序列化开销，缓存淘汰效率差，无法为每个key设置TTL，会在内存中分配大数组用以达到 0 GC 的目的，一定程度上会影响到 GC 频率 | 是       | 高    | 动态数据量，需要快速扩展的场景     | 是    | 高     |
+| fastcache | 性能高，分片降低锁粒度，索引存储优化              | 不支持TTL                                                               | 否       | 高    | 高性能需求，不需要TTL管理      | 是    | 高     |
+| ristretto | 高性能，有准入政策和SampledLFU驱逐政策        | 对GC无优化，内部使用 sync.map                                                 | 是       | 高    | 高性能需求，需要精细控制淘汰策略的场景 | 是    | 高     |
+| go-cache  | 易于使用，长时间维护                      | 长久未更新，可能存在潜在的安全和性能问题                                                 | 是       | 低    | 简单缓存需求，不关心长期维护和扩展性  | 是    | 低     |
+| theine-go | 支持TTL与持久化，自适应W-TinyLFU淘汰策略，高命中率 | 相对较新，社区支持可能较少                                                        | 是       | 高    | 需要TTL管理和持久化，高命中率要求  | 是    | 不确定   |
+
+综上所述，本次作业可以选用 `ristretto` 或 `theine-go` 作为本地缓存。
+
+##### 参考链接
+
+[性能敏感场景下，Go 三方库的选型思路和案例分析](https://blog.csdn.net/kevin_tech/article/details/125437607)
+
+[golang本地缓存(bigcache/freecache/fastcache等)选型对比及原理总结 - 知乎](https://zhuanlan.zhihu.com/p/487455942)
+
+### 实现与测试
+
+#### 代码实现
+
+- [service 层](https://github.com/ycvk/geek_homework/blob/week04/tinybook/internal/service/code.go)
+- [repository 层](https://github.com/ycvk/geek_homework/blob/week04/tinybook/internal/repository/code.go)
+- [cache 层](https://github.com/ycvk/geek_homework/blob/80690ff380c90b9bf1b01f7f7e3e39f176561f32/tinybook/internal/repository/cache/code.go#L31-L102) (
+  使用 `theine-go` 作为本地缓存, 逻辑详见代码注释)
+- [wire DI 层](https://github.com/ycvk/geek_homework/blob/80690ff380c90b9bf1b01f7f7e3e39f176561f32/tinybook/wire.go#L25) (
+  依赖注入时, 使用 `LocalCodeCache` 替换 `CodeRedisCache`)
+
+#### 测试结果
+
+##### 1. 发送验证码与登录
+
+![test_01](https://github.com/ycvk/PicDemo/blob/main/8325afc6715b05b8290ef82597ddd98a.png?raw=true)
+
+##### 2. 再次使用此验证码登录
+
+![test_02](https://github.com/ycvk/PicDemo/blob/main/26874c3dafaa801849828b3b057d3391.png?raw=true)
+
+##### 3. 点击登录超过 3 次
+
+![test_03](https://github.com/ycvk/PicDemo/blob/main/d46be533a394741ec42730c58eb4e536.png?raw=true)
+
+##### 4. 短时间内发送验证码超过 3 次
+
+![test_04](https://github.com/ycvk/PicDemo/blob/main/WeChat4dbea418d336ac0b3bb35dc63de2296c.jpg?raw=true)
+
+</details>

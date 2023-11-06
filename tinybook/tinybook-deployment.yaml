@@ -18,6 +18,9 @@ spec:
       containers:
         - name: tinybook
           image: ycvk/tinybook:v0.0.1
+          env:
+            - name: TZ
+              value: Asia/Shanghai
           ports:
             - containerPort: 8081
           resources:

@@ -8,22 +8,19 @@ func SliceDelIdx[T any](slice *[]T, idx uint) {
 	if idx >= sliceLen || sliceLen == 0 {
 		return
 	}
+	switch idx {
 	// 判断是否删除的是第一个元素 如果是则直接将slice的指针指向第二个元素
-	if idx == 0 {
+	case 0:
 		*slice = (*slice)[1:]
-		ReduceCap(slice)
-		return
-	}
 	// 判断是否删除的是最后一个元素 如果是则直接将slice的长度减一
-	if idx == sliceLen-1 {
+	case sliceLen - 1:
 		*slice = (*slice)[:sliceLen-1]
-		ReduceCap(slice)
-		return
+	// 默认将idx后面的元素向前移动一位 并将slice的长度减一
+	default:
+		copy((*slice)[idx:], (*slice)[idx+1:])
+		*slice = (*slice)[:sliceLen-1]
 	}
-
-	// 将idx后面的元素向前移动一位 并将slice的长度减一
-	copy((*slice)[idx:], (*slice)[idx+1:])
-	*slice = (*slice)[:sliceLen-1]
+	// 缩容
 	ReduceCap(slice)
 }
 
@@ -34,13 +31,16 @@ func ReduceCap[T any](slice *[]T) {
 	// 获取原slice的容量
 	sliceCap := cap(*slice)
 	sliceLen := len(*slice)
-	processCap := sliceCap * 3 / 4 // 0.75倍
-	halfCap := sliceCap / 2        // 0.5倍
+	threeQuartersCap := sliceCap * 3 / 4 // 0.75倍
+	halfCap := sliceCap / 2              // 0.5倍
 	var newSlice []T
 
+	if sliceLen == 0 {
+		return
+	}
 	// 判断是否需要缩容
-	if sliceCap > 256 && sliceLen < processCap { // 容量大于256且长度小于缩容后的容量
-		newSlice = make([]T, sliceLen, processCap)
+	if sliceCap > 256 && sliceLen < threeQuartersCap { // 容量大于256且长度小于缩容后的容量
+		newSlice = make([]T, sliceLen, threeQuartersCap)
 	} else if sliceCap <= 256 && sliceLen < halfCap { // 容量小于256且长度小于缩容后的容量
 		newSlice = make([]T, sliceLen, halfCap)
 	} else {
