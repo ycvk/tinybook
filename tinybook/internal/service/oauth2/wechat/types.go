@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"geek_homework/tinybook/internal/domain"
 	"github.com/bytedance/sonic"
-	uuid "github.com/lithammer/shortuuid/v4"
 	"net/http"
 	"net/url"
 )
@@ -13,7 +12,7 @@ import (
 var redirectURI = url.PathEscape("https://tinybook.ycvk.app/oauth2/wechat/callback")
 
 type Service interface {
-	AuthURL(ctx context.Context) (string, error)
+	AuthURL(ctx context.Context, state string) (string, error)
 	Verify(ctx context.Context, code string) (domain.WechatInfo, error)
 }
 
@@ -71,8 +70,7 @@ func (s *service) Verify(ctx context.Context, code string) (domain.WechatInfo, e
 	}, nil
 }
 
-func (s *service) AuthURL(ctx context.Context) (string, error) {
-	u := uuid.New()
+func (s *service) AuthURL(ctx context.Context, state string) (string, error) {
 	const authURL = "https://open.weixin.qq.com/connect/qrconnect?appid=%s&redirect_uri=%s&response_type=code&scope=snsapi_login&state=%s#wechat_redirect"
-	return fmt.Sprintf(authURL, s.appId, redirectURI, u), nil
+	return fmt.Sprintf(authURL, s.appId, redirectURI, state), nil
 }
