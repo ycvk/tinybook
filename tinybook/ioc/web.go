@@ -3,6 +3,7 @@ package ioc
 import (
 	"geek_homework/tinybook/config"
 	"geek_homework/tinybook/internal/web"
+	"geek_homework/tinybook/internal/web/jwt"
 	"geek_homework/tinybook/internal/web/middleware"
 	"geek_homework/tinybook/pkg/ginx/middleware/ratelimit"
 	"geek_homework/tinybook/pkg/limiter"
@@ -27,10 +28,10 @@ func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler, 
 }
 
 // InitHandlerFunc 初始化中间件
-func InitHandlerFunc(redisClient redis.Cmdable) []gin.HandlerFunc {
+func InitHandlerFunc(redisClient redis.Cmdable, handler jwt.Handler) []gin.HandlerFunc {
 	corsConfig := initCorsConfig()          // 跨域配置
 	rateLimit := initRateLimit(redisClient) // 限流器
-	loginJWT := initLoginJWT()              // 登录jwt
+	loginJWT := initLoginJWT(handler)       // 登录jwt
 	return []gin.HandlerFunc{corsConfig, rateLimit, loginJWT}
 }
 
@@ -49,8 +50,8 @@ func initCorsConfig() gin.HandlerFunc {
 }
 
 // initLoginJWT 初始化登录jwt
-func initLoginJWT() gin.HandlerFunc {
-	middlewareBuilder := middleware.LoginJWTMiddlewareBuilder{}
+func initLoginJWT(handler jwt.Handler) gin.HandlerFunc {
+	middlewareBuilder := middleware.NewLoginJWTMiddlewareBuilder(handler)
 	return middlewareBuilder.Build()
 }
 

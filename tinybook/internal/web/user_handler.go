@@ -3,9 +3,11 @@ package web
 import (
 	"geek_homework/tinybook/internal/domain"
 	"geek_homework/tinybook/internal/service"
+	jwt2 "geek_homework/tinybook/internal/web/jwt"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"log/slog"
 	"net/http"
 	"strings"
 )
@@ -17,22 +19,16 @@ const (
 )
 
 type UserHandler struct {
-	jwtHandler  *JWTHandler
+	jwtHandler  jwt2.Handler
 	userService service.UserService
 	codeService service.CodeService
 }
 
-type UserClaims struct {
-	jwt.RegisteredClaims
-	Uid       int64  `json:"uid"`
-	UserAgent string `json:"userAgent"`
-}
-
-func NewUserHandler(userService service.UserService, codeService service.CodeService) *UserHandler {
+func NewUserHandler(userService service.UserService, codeService service.CodeService, handler jwt2.Handler) *UserHandler {
 	return &UserHandler{
 		userService: userService,
 		codeService: codeService,
-		jwtHandler:  NewJWTHandler(),
+		jwtHandler:  handler,
 	}
 }
 
@@ -87,7 +83,7 @@ func (userHandler *UserHandler) LoginJWT(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, "密码不正确")
 		return
 	}
-	err = userHandler.jwtHandler.SetJWTToken(ctx, user)
+	err = userHandler.jwtHandler.SetLoginToken(ctx, user)
 	if err != nil {
 		ctx.JSON(http.StatusOK, "登录失败")
 		return
@@ -151,7 +147,7 @@ func (userHandler *UserHandler) Edit(ctx *gin.Context) {
 	//	return
 	//}
 	// 使用jwt token获取userId
-	claims, ok := (ctx.MustGet("userClaims")).(UserClaims)
+	claims, ok := (ctx.MustGet("userClaims")).(jwt2.UserClaims)
 	if !ok {
 		ctx.JSON(http.StatusOK, gin.H{"msg": "用户未登录, 请先登录"})
 		return
@@ -177,7 +173,7 @@ func (userHandler *UserHandler) Profile(ctx *gin.Context) {
 	//session := sessions.Default(ctx)
 	//userId := session.Get("userId")
 	// 使用jwt token获取userId
-	claims, ok := (ctx.MustGet("userClaims")).(UserClaims)
+	claims, ok := (ctx.MustGet("userClaims")).(jwt2.UserClaims)
 	if !ok {
 		ctx.JSON(http.StatusOK, gin.H{"msg": "用户未登录, 请先登录"})
 		return
@@ -267,7 +263,7 @@ func (userHandler *UserHandler) LoginSMS(ctx *gin.Context) {
 		return
 	}
 	// 生成与设置jwt token
-	err = userHandler.jwtHandler.SetJWTToken(ctx, user)
+	err = userHandler.jwtHandler.SetLoginToken(ctx, user)
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 400,
@@ -285,11 +281,18 @@ func (userHandler *UserHandler) LoginSMS(ctx *gin.Context) {
 func (userHandler *UserHandler) RefreshToken(ctx *gin.Context) {
 	// 从header中获取refresh token
 	authorization := userHandler.jwtHandler.ExtractAuthorization(ctx)
-	var refreshClaims RefreshClaims
+	var refreshClaims jwt2.RefreshClaims
 	token, err := jwt.ParseWithClaims(authorization, &refreshClaims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(JWTKey), nil
 	})
 	if err != nil {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	// 判断refresh token是否存在于redis
+	err = userHandler.jwtHandler.CheckToken(ctx, refreshClaims.Ssid)
+	if err != nil {
+		// refresh token存在于redis 或者redis崩溃了
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
@@ -298,9 +301,33 @@ func (userHandler *UserHandler) RefreshToken(ctx *gin.Context) {
 		return
 	}
 	// 生成新的jwt token 和 refresh token
-	err = userHandler.jwtHandler.SetJWTToken(ctx, domain.User{
+	err = userHandler.jwtHandler.SetLoginToken(ctx, domain.User{
 		Id: refreshClaims.Uid,
 	})
+	ctx.JSON(http.StatusOK, Result{
+		Code: 200,
+		Msg:  "ok",
+	})
+}
+
+func (userHandler *UserHandler) Logout(ctx *gin.Context) {
+	session := sessions.Default(ctx)
+	session.Options(sessions.Options{
+		MaxAge: -1,
+	})
+	err := session.Save()
+	if err != nil {
+		slog.Error("退出登录失败", "err", err)
+		return
+	}
+}
+
+func (userHandler *UserHandler) LogoutJWT(ctx *gin.Context) {
+	err := userHandler.jwtHandler.DeregisterToken(ctx)
+	if err != nil {
+		slog.Error("退出登录失败", "err", err)
+		return
+	}
 	ctx.JSON(http.StatusOK, Result{
 		Code: 200,
 		Msg:  "ok",
@@ -317,6 +344,7 @@ func (userHandler *UserHandler) RegisterRoutes(engine *gin.Engine) {
 	group.POST("/edit", userHandler.Edit)
 	group.GET("/profile", userHandler.Profile)
 	group.GET("/refresh_token", userHandler.RefreshToken)
+	group.GET("/logout", userHandler.Logout)
 	group.POST("/login_sms/code/send", userHandler.SendSMSLoginCode)
 	group.POST("/login_sms", userHandler.LoginSMS)
 }

@@ -3,6 +3,7 @@ package web
 import (
 	"geek_homework/tinybook/internal/service"
 	"geek_homework/tinybook/internal/service/oauth2/wechat"
+	jwt2 "geek_homework/tinybook/internal/web/jwt"
 	"github.com/cockroachdb/errors"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -10,10 +11,12 @@ import (
 	"net/http"
 )
 
+const JWTKey = "MK7z43qKmUkY5sy9w3rQ8CygFpOSN90W"
+
 var ErrInvalidState = errors.New("state不匹配")
 
 type OAuth2WechatHandler struct {
-	jwtHandler      *JWTHandler
+	jwtHandler      jwt2.Handler
 	wechatService   wechat.Service
 	userService     service.UserService
 	stateCookieName string
@@ -24,11 +27,11 @@ type StateClaims struct {
 	State string `json:"state"`
 }
 
-func NewOAuth2WechatHandler(service wechat.Service, userService service.UserService) *OAuth2WechatHandler {
+func NewOAuth2WechatHandler(service wechat.Service, userService service.UserService, handler jwt2.Handler) *OAuth2WechatHandler {
 	return &OAuth2WechatHandler{
 		wechatService:   service,
 		userService:     userService,
-		jwtHandler:      NewJWTHandler(),
+		jwtHandler:      handler,
 		stateCookieName: "jwt-state",
 	}
 }
@@ -64,6 +67,7 @@ func (h *OAuth2WechatHandler) Auth2URL(context *gin.Context) {
 }
 
 func (h *OAuth2WechatHandler) Callback(context *gin.Context) {
+	// 验证state 防止csrf攻击
 	verifyErr := h.VerifyStateCookie(context)
 	if verifyErr != nil {
 		context.JSON(http.StatusOK, Result{
@@ -81,6 +85,7 @@ func (h *OAuth2WechatHandler) Callback(context *gin.Context) {
 		})
 		return
 	}
+	// 调用service层的LoginOrSignup方法
 	byWechat, err := h.userService.LoginOrSignupByWechat(context, wechatInfo)
 	if err != nil {
 		context.JSON(http.StatusOK, Result{
@@ -89,7 +94,8 @@ func (h *OAuth2WechatHandler) Callback(context *gin.Context) {
 		})
 		return
 	}
-	verifyErr = h.jwtHandler.SetJWTToken(context, byWechat)
+	// 生成jwt 包含refresh token和jwt token
+	verifyErr = h.jwtHandler.SetLoginToken(context, byWechat)
 	if verifyErr != nil {
 		context.JSON(http.StatusOK, Result{
 			Code: 500,

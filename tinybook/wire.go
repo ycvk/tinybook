@@ -8,6 +8,7 @@ import (
 	"geek_homework/tinybook/internal/repository/dao"
 	"geek_homework/tinybook/internal/service"
 	"geek_homework/tinybook/internal/web"
+	"geek_homework/tinybook/internal/web/jwt"
 	"geek_homework/tinybook/ioc"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
@@ -27,8 +28,8 @@ func InitWebServer() *gin.Engine {
 		// 初始化oauth2模块
 		ioc.InitWechatService,
 		// 初始化handler
-		web.NewUserHandler, web.NewOAuth2WechatHandler,
-		// 初始化web
+		web.NewUserHandler, web.NewOAuth2WechatHandler, jwt.NewRedisJWTHandler,
+		// 初始化web 和 中间件
 		ioc.InitWebServer, ioc.InitHandlerFunc,
 	)
 

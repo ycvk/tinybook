@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"geek_homework/tinybook/internal/web"
+	jwt2 "geek_homework/tinybook/internal/web/jwt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/samber/lo"
@@ -9,7 +9,13 @@ import (
 )
 
 type LoginJWTMiddlewareBuilder struct {
-	jwtHandler web.JWTHandler
+	jwtHandler jwt2.Handler
+}
+
+func NewLoginJWTMiddlewareBuilder(handler jwt2.Handler) *LoginJWTMiddlewareBuilder {
+	return &LoginJWTMiddlewareBuilder{
+		jwtHandler: handler,
+	}
 }
 
 // Build 构建登录中间件
@@ -27,9 +33,9 @@ func (builder *LoginJWTMiddlewareBuilder) Build() gin.HandlerFunc {
 		}
 		// 从header中提取jwt token
 		jwtToken := builder.jwtHandler.ExtractAuthorization(ctx)
-		var claims web.UserClaims
+		var claims jwt2.UserClaims
 		withClaims, err := jwt.ParseWithClaims(jwtToken, &claims, func(token *jwt.Token) (interface{}, error) {
-			return []byte(web.JWTKey), nil
+			return []byte(jwt2.JWTKey), nil
 		})
 		if err != nil {
 			// 解析失败 token过期或者token不合法
@@ -56,6 +62,13 @@ func (builder *LoginJWTMiddlewareBuilder) Build() gin.HandlerFunc {
 		//	}
 		//	ctx.Header("X-Jwt-Token", tokenStr)
 		//}
+
+		err = builder.jwtHandler.CheckToken(ctx, claims.Ssid)
+		if err != nil {
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
 		ctx.Set("userClaims", claims) // 设置userId到上下文
 	}
 }

@@ -72,7 +72,7 @@ func (mr *MockUserServiceMockRecorder) Login(ctx, email, password any) *gomock.C
 // LoginOrSignup mocks base method.
 func (m *MockUserService) LoginOrSignup(ctx *gin.Context, phone string) (domain.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoginOrSignup", ctx, phone)
+	ret := m.ctrl.Call(m, "LoginOrSignupByPhone", ctx, phone)
 	ret0, _ := ret[0].(domain.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -81,7 +81,7 @@ func (m *MockUserService) LoginOrSignup(ctx *gin.Context, phone string) (domain.
 // LoginOrSignup indicates an expected call of LoginOrSignup.
 func (mr *MockUserServiceMockRecorder) LoginOrSignup(ctx, phone any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoginOrSignup", reflect.TypeOf((*MockUserService)(nil).LoginOrSignup), ctx, phone)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoginOrSignupByPhone", reflect.TypeOf((*MockUserService)(nil).LoginOrSignup), ctx, phone)
 }
 
 // Profile mocks base method.

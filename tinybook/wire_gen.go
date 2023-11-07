@@ -12,6 +12,7 @@ import (
 	"geek_homework/tinybook/internal/repository/dao"
 	"geek_homework/tinybook/internal/service"
 	"geek_homework/tinybook/internal/web"
+	"geek_homework/tinybook/internal/web/jwt"
 	"geek_homework/tinybook/ioc"
 	"github.com/gin-gonic/gin"
 )
@@ -20,7 +21,8 @@ import (
 
 func InitWebServer() *gin.Engine {
 	cmdable := ioc.InitRedis()
-	v := ioc.InitHandlerFunc(cmdable)
+	handler := jwt.NewRedisJWTHandler(cmdable)
+	v := ioc.InitHandlerFunc(cmdable, handler)
 	db := ioc.InitDB()
 	userDAO := dao.NewGormUserDAO(db)
 	userCache := cache.NewRedisUserCache(cmdable)
@@ -33,9 +35,9 @@ func InitWebServer() *gin.Engine {
 	smsRepository := repository.NewGormSMSRepository(smsdao)
 	smsService := ioc.InitSMSService(cmdable, smsRepository)
 	codeService := service.NewCodeService(codeRepository, smsService)
-	userHandler := web.NewUserHandler(userService, codeService)
+	userHandler := web.NewUserHandler(userService, codeService, handler)
 	wechatService := ioc.InitWechatService()
-	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService)
+	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService, handler)
 	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler)
 	return engine
 }
