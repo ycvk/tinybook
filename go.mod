@@ -26,6 +26,7 @@ require (
 	github.com/wasilibs/go-re2 v1.4.0
 	github.com/zeebo/assert v1.3.0
 	go.uber.org/mock v0.3.0
+	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.14.0
 	golang.org/x/net v0.17.0
 	gorm.io/datatypes v1.2.0
@@ -145,7 +146,6 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/arch v0.5.0 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/oauth2 v0.12.0 // indirect

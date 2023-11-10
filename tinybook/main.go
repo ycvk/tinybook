@@ -22,7 +22,8 @@ func initViper() {
 	//if err != nil {
 	//	panic(err)
 	//}
-	err := viper.AddRemoteProvider("etcd3", "http://127.0.0.1:12379", "tinybook")
+	err := viper.AddRemoteProvider("etcd3", "tinybook-etcd:2381", "tinybook")
+	//err := viper.AddRemoteProvider("etcd3", "127.0.0.1:32379", "tinybook-local")
 	if err != nil {
 		panic(err)
 	}

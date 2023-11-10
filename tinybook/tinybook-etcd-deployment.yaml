@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: etcd-data
+  labels:
+    app: tinybook-etcd
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tinybook-etcd
+  labels:
+    app: tinybook-etcd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tinybook-etcd
+  template:
+    metadata:
+      labels:
+        app: tinybook-etcd
+    spec:
+      containers:
+        - name: tinybook-etcd
+          image: bitnami/etcd:latest
+          env:
+            - name: ALLOW_NONE_AUTHENTICATION
+              value: "yes"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: etcd
+              containerPort: 2379
+          resources:
+            limits:
+              cpu: "0.5"
+              memory: 128Mi
+            requests:
+              cpu: "0.5"
+              memory: 128Mi
+          volumeMounts:
+            - name: etcd-data
+              mountPath: /bitnami/etcd
+      volumes:
+        - name: etcd-data
+          persistentVolumeClaim:
+            claimName: etcd-data
+      restartPolicy: Always
