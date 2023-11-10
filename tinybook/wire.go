@@ -30,7 +30,7 @@ func InitWebServer() *gin.Engine {
 		// 初始化handler
 		web.NewUserHandler, web.NewOAuth2WechatHandler, jwt.NewRedisJWTHandler,
 		// 初始化web 和 中间件
-		ioc.InitWebServer, ioc.InitHandlerFunc,
+		ioc.InitWebServer, ioc.InitHandlerFunc, ioc.InitLogger,
 	)
 
 	return gin.Default()

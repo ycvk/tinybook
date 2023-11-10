@@ -12,6 +12,7 @@ import (
 	redisSession "github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 	"strings"
 	"time"
 )
@@ -28,11 +29,12 @@ func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler, 
 }
 
 // InitHandlerFunc 初始化中间件
-func InitHandlerFunc(redisClient redis.Cmdable, handler jwt.Handler) []gin.HandlerFunc {
+func InitHandlerFunc(redisClient redis.Cmdable, handler jwt.Handler, logger *zap.Logger) []gin.HandlerFunc {
 	corsConfig := initCorsConfig()          // 跨域配置
 	rateLimit := initRateLimit(redisClient) // 限流器
+	log := initLogger(logger)               // 日志
 	loginJWT := initLoginJWT(handler)       // 登录jwt
-	return []gin.HandlerFunc{corsConfig, rateLimit, loginJWT}
+	return []gin.HandlerFunc{corsConfig, rateLimit, log, loginJWT}
 }
 
 // initCorsConfig 跨域配置
@@ -47,6 +49,13 @@ func initCorsConfig() gin.HandlerFunc {
 		},
 		MaxAge: 12 * time.Hour, //缓存时间
 	})
+}
+
+// initLogger 初始化日志
+func initLogger(logger *zap.Logger) gin.HandlerFunc {
+	return middleware.NewLogMiddleware(func(ctx *gin.Context, accessLog *middleware.AccessLog) {
+		logger.Info("", zap.Any("accessLog", accessLog))
+	}).AllowPrintReqBody().AllowPrintRespBody().Build()
 }
 
 // initLoginJWT 初始化登录jwt

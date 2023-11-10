@@ -1,7 +1,7 @@
 package ioc
 
 import (
-	"geek_homework/tinybook/config"
+	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"sync"
@@ -13,11 +13,18 @@ var (
 )
 
 func InitDB() *gorm.DB {
+	type Config struct {
+		DSN string `yaml:"dsn"`
+	}
+	var cfg Config
+	err := viper.UnmarshalKey("db", &cfg)
+	if err != nil {
+		panic(err)
+	}
+
 	once.Do(func() {
-		dsn := config.Config.DB.Host
-		var err error
-		gormDB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
-		gormDB = gormDB.Debug()
+		gormDB, err = gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{})
+		gormDB = gormDB.Debug() // 开启debug模式 会打印sql语句 便于调试
 		if err != nil {
 			panic(err)
 		}

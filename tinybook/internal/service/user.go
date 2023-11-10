@@ -6,6 +6,7 @@ import (
 	"geek_homework/tinybook/internal/repository"
 	"github.com/cockroachdb/errors"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"log/slog"
 )
@@ -26,12 +27,14 @@ type UserService interface {
 
 type userService struct {
 	userRepo repository.UserRepository
+	log      *zap.Logger
 }
 
 // NewUserService 构建UserService
-func NewUserService(userRepository repository.UserRepository) UserService {
+func NewUserService(userRepository repository.UserRepository, logger *zap.Logger) UserService {
 	return &userService{
 		userRepo: userRepository,
+		log:      logger,
 	}
 }
 
@@ -40,7 +43,7 @@ func (userService *userService) Signup(ctx *gin.Context, user domain.User) error
 	password := user.ValidatePassword()
 	email := user.ValidateEmail()
 	if !email {
-		slog.Error("邮箱格式不正确", "email", user.Email)
+		userService.log.Error("邮箱格式不正确", zap.String("email", user.Email))
 		return errors.New("邮箱格式不正确")
 	}
 	if !password {
