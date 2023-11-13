@@ -9,7 +9,7 @@ Golang class homework in Geek Space.
 - [Week03: 部署方案修改](#week03-部署方案修改)
 - [Week04: 引入本地缓存](#week04-引入本地缓存)
 - [Week05: 同步转异步的容错机制](#week05-同步转异步的容错机制)
-- [Week06: 优化 Web 中打印日志的部分](#week06-优化Web中打印日志的部分)
+- [Week06: 优化Web中打印日志的部分](#week06-优化web中打印日志的部分)
 
 ---
 
@@ -439,8 +439,7 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 
 ---
 
-<h2 id="Week06"> Week06: 优化Web中打印日志的部分
-</h2>
+<h2 id="Week06"> Week06: 优化Web中打印日志的部分</h2>
 
 [GitHub Link](https://github.com/ycvk/geek_homework/blob/week06/tinybook/internal/web/middleware/error.go)
 
@@ -458,21 +457,21 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 
 1. 定义错误处理中间件
 
-- 首先，定义一个中间件函数。这个函数将在请求的处理链中被调用。使用 ctx.Next() 来调用链中的其他处理函数。之后，中间件会检查是否有任何错误被加入到
-  Gin 的 Context 中。
-    - ```go
-  func ErrorHandler() gin.HandlerFunc {
-  return func(ctx *gin.Context) {
-  ctx.Next()
-  // 检查是否有错误被加入到 Gin 的 Context 中
-  err := ctx.Errors.Last()
-  if err != nil {
-  // 如果有错误，记录日志
-  log.Printf("Error: %s", err.Error())
-  }
-  }
-  }
-    ```
+    - 首先，定义一个中间件函数。这个函数将在请求的处理链中被调用。使用 ctx.Next() 来调用链中的其他处理函数。之后，中间件会检查是否有任何错误被加入到
+      Gin 的 Context 中。
+        - ```go
+             func ErrorHandler() gin.HandlerFunc {
+                return func(ctx *gin.Context) {
+                    ctx.Next()
+                    // 检查是否有错误被加入到 Gin 的 Context 中
+                    err := ctx.Errors.Last()
+                    if err != nil {
+                        // 如果有错误，记录日志
+                        log.Printf("Error: %s", err.Error())
+                    }
+                }
+             }
+        ```
 
 2. 在路由中应用中间件
 
