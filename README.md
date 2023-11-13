@@ -9,7 +9,7 @@ Golang class homework in Geek Space.
 - [Week03: 部署方案修改](#week03-部署方案修改)
 - [Week04: 引入本地缓存](#week04-引入本地缓存)
 - [Week05: 同步转异步的容错机制](#week05-同步转异步的容错机制)
-- [Week06: 优化Web中打印日志的部分](#week06-优化web中打印日志的部分)
+- [Week06: 优化打印日志的部分](#week06-优化打印日志的部分)
 
 ---
 
@@ -439,7 +439,7 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 
 ---
 
-<h2 id="Week06"> Week06: 优化Web中打印日志的部分</h2>
+<h2 id="Week06"> Week06: 优化打印日志的部分</h2>
 
 [GitHub Link](https://github.com/ycvk/geek_homework/blob/week06/tinybook/internal/web/middleware/error.go)
 
@@ -471,7 +471,7 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
                     }
                 }
              }
-        ```
+            ```
 
 2. 在路由中应用中间件
 
@@ -490,7 +490,7 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
             }
            // 正常的处理逻辑...
            }
-        ```
+            ```
     - 这样，错误就会被传递到错误处理中间件中。
 
 ### 优点
