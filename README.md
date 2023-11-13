@@ -9,6 +9,7 @@ Golang class homework in Geek Space.
 - [Week03: 部署方案修改](#week03-部署方案修改)
 - [Week04: 引入本地缓存](#week04-引入本地缓存)
 - [Week05: 同步转异步的容错机制](#week05-同步转异步的容错机制)
+- [Week06: 优化 Web 中打印日志的部分](#week06-优化web中打印日志的部分)
 
 ---
 
@@ -435,3 +436,70 @@ k8s 项目启动初始化时，在 [InitSMSService](https://github.com/ycvk/geek
 insert进数据库后，开始重试，重试超过了最大次数，重试彻底失败，日志打印了重试失败的堆栈信息。
 
 </details>
+
+---
+
+<h2 id="Week06"> Week06: 优化Web中打印日志的部分
+</h2>
+
+[GitHub Link](https://github.com/ycvk/geek_homework/blob/week06/tinybook/internal/web/middleware/error.go)
+
+### 作业要求
+
+- 在 Web 的 Handler 部分，有很多 if-else 分支，基本上都是在判定 err !=nil。每一个 if 里面都要打印日志。
+- 现在要求优化这些打印日志的逻辑，避免每一处 err !=nil 的时候，都得手动打一个日志。
+
+### 优化思路
+
+- 使用中间件进行错误捕获和日志记录。
+- 在 Gin 中，中间件可以用来拦截请求并进行预处理，也可以在处理流程的最后统一处理错误。可以定义一个中间件来捕获处理过程中的任何错误，并在这里统一进行日志记录。
+
+### 代码实现
+
+1. 定义错误处理中间件
+
+- 首先，定义一个中间件函数。这个函数将在请求的处理链中被调用。使用 ctx.Next() 来调用链中的其他处理函数。之后，中间件会检查是否有任何错误被加入到
+  Gin 的 Context 中。
+    - ```go
+  func ErrorHandler() gin.HandlerFunc {
+  return func(ctx *gin.Context) {
+  ctx.Next()
+  // 检查是否有错误被加入到 Gin 的 Context 中
+  err := ctx.Errors.Last()
+  if err != nil {
+  // 如果有错误，记录日志
+  log.Printf("Error: %s", err.Error())
+  }
+  }
+  }
+    ```
+
+2. 在路由中应用中间件
+
+- `router.Use(ErrorLogger()) // 应用中间件`
+- 这样，每个经过这个路由的请求都会经过错误处理中间件。
+
+3. 在处理函数中添加错误到上下文
+
+    - 在处理函数中，如果有错误，可以使用 `ctx.Error(err)` 将错误添加到 Gin 的 Context 中。
+        - ```go
+           func MyHandler(c *gin.Context) {
+                err := someFunction() // 假设这是一个可能产生错误的函数
+            if err != nil {
+                c.Error(err) // 将错误添加到上下文
+                return
+            }
+           // 正常的处理逻辑...
+           }
+        ```
+    - 这样，错误就会被传递到错误处理中间件中。
+
+### 优点
+
+使用这种方法的主要优点是：
+
+- 集中管理：你可以在一个地方集中处理所有的错误日志记录，而不需要在每个处理函数中重复相同的逻辑。
+- 灵活性：你可以轻松地调整错误处理和日志记录的策略，而无需修改大量的处理函数。
+- 代码清洁：这使得处理函数更加专注于它们的主要职责，从而使代码更加清晰和易于理解。
+
+---
