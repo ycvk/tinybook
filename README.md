@@ -9,7 +9,7 @@ Golang class homework in Geek Space.
 - [Week03: 部署方案修改](#week03-部署方案修改)
 - [Week04: 引入本地缓存](#week04-引入本地缓存)
 - [Week05: 同步转异步的容错机制](#week05-同步转异步的容错机制)
-- [Week06: 优化 Web 中打印日志的部分](#week06-优化web中打印日志的部分)
+- [Week06: 优化 Web 中打印日志的部分](#week06-优化Web中打印日志的部分)
 
 ---
 
