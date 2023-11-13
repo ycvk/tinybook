@@ -7,7 +7,6 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"log/slog"
 	"net/http"
 	"strings"
 )
@@ -43,6 +42,7 @@ func (userHandler *UserHandler) SignUp(ctx *gin.Context) {
 	var sign Sign
 	if err := ctx.Bind(&sign); err != nil {
 		ctx.JSON(http.StatusOK, "格式不正确")
+		ctx.Error(err)
 		return
 	}
 	if strings.Compare(sign.Password, sign.ConfirmPassword) != 0 {
@@ -56,6 +56,7 @@ func (userHandler *UserHandler) SignUp(ctx *gin.Context) {
 	})
 	if err != nil {
 		ctx.JSON(http.StatusOK, err.Error())
+		ctx.Error(err)
 		return
 	}
 	ctx.JSON(http.StatusOK, "注册成功")
@@ -71,6 +72,7 @@ func (userHandler *UserHandler) LoginJWT(ctx *gin.Context) {
 	var login Login
 	if err := ctx.Bind(&login); err != nil {
 		ctx.JSON(http.StatusOK, "格式不正确")
+		ctx.Error(err)
 		return
 	}
 	// 调用service层的Login方法
@@ -86,6 +88,7 @@ func (userHandler *UserHandler) LoginJWT(ctx *gin.Context) {
 	err = userHandler.jwtHandler.SetLoginToken(ctx, user)
 	if err != nil {
 		ctx.JSON(http.StatusOK, "登录失败")
+		ctx.Error(err)
 		return
 	}
 	ctx.JSON(http.StatusOK, "登录成功")
@@ -111,6 +114,7 @@ func (userHandler *UserHandler) Login(ctx *gin.Context) {
 			return
 		}
 		ctx.JSON(http.StatusOK, "密码不正确")
+		ctx.Error(err)
 		return
 	}
 	// 设置session 保存用户id 有效时间1小时
@@ -122,6 +126,7 @@ func (userHandler *UserHandler) Login(ctx *gin.Context) {
 	err = session.Save()
 	if err != nil {
 		ctx.JSON(http.StatusOK, "登录失败")
+		ctx.Error(err)
 		return
 	}
 	ctx.JSON(http.StatusOK, "登录成功")
@@ -137,6 +142,7 @@ func (userHandler *UserHandler) Edit(ctx *gin.Context) {
 	var edit Edit
 	if err := ctx.Bind(&edit); err != nil {
 		ctx.JSON(http.StatusOK, "格式不正确")
+		ctx.Error(err)
 		return
 	}
 	// 获取session中的userId
@@ -162,6 +168,7 @@ func (userHandler *UserHandler) Edit(ctx *gin.Context) {
 	})
 	if err != nil {
 		ctx.JSON(http.StatusOK, gin.H{"msg": err.Error()})
+		ctx.Error(err)
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"msg": "编辑成功"})
@@ -182,6 +189,7 @@ func (userHandler *UserHandler) Profile(ctx *gin.Context) {
 	user, err := userHandler.userService.Profile(ctx, claims.Uid)
 	if err != nil {
 		ctx.JSON(http.StatusOK, gin.H{"msg": err.Error()})
+		ctx.Error(err)
 		return
 	}
 
@@ -215,6 +223,7 @@ func (userHandler *UserHandler) SendSMSLoginCode(ctx *gin.Context) {
 			Code: 400,
 			Msg:  err.Error(),
 		})
+		ctx.Error(err)
 		return
 	}
 	ctx.JSON(http.StatusOK, Result{
@@ -244,6 +253,7 @@ func (userHandler *UserHandler) LoginSMS(ctx *gin.Context) {
 			Code: 400,
 			Msg:  err.Error(),
 		})
+		ctx.Error(err)
 		return
 	}
 	if !verify {
@@ -260,6 +270,7 @@ func (userHandler *UserHandler) LoginSMS(ctx *gin.Context) {
 			Code: 400,
 			Msg:  err.Error(),
 		})
+		ctx.Error(err)
 		return
 	}
 	// 生成与设置jwt token
@@ -269,6 +280,7 @@ func (userHandler *UserHandler) LoginSMS(ctx *gin.Context) {
 			Code: 400,
 			Msg:  "登录失败",
 		})
+		ctx.Error(err)
 		return
 	}
 	ctx.JSON(http.StatusOK, Result{
@@ -287,6 +299,7 @@ func (userHandler *UserHandler) RefreshToken(ctx *gin.Context) {
 	})
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
+		ctx.Error(err)
 		return
 	}
 	// 判断refresh token是否存在于redis
@@ -317,7 +330,7 @@ func (userHandler *UserHandler) Logout(ctx *gin.Context) {
 	})
 	err := session.Save()
 	if err != nil {
-		slog.Error("退出登录失败", "err", err)
+		ctx.Error(err)
 		return
 	}
 }
@@ -325,7 +338,7 @@ func (userHandler *UserHandler) Logout(ctx *gin.Context) {
 func (userHandler *UserHandler) LogoutJWT(ctx *gin.Context) {
 	err := userHandler.jwtHandler.DeregisterToken(ctx)
 	if err != nil {
-		slog.Error("退出登录失败", "err", err)
+		ctx.Error(err)
 		return
 	}
 	ctx.JSON(http.StatusOK, Result{

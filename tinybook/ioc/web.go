@@ -33,8 +33,9 @@ func InitHandlerFunc(redisClient redis.Cmdable, handler jwt.Handler, logger *zap
 	corsConfig := initCorsConfig()          // 跨域配置
 	rateLimit := initRateLimit(redisClient) // 限流器
 	log := initLogger(logger)               // 日志
+	errorLog := initErrorLog(logger)        // 错误日志
 	loginJWT := initLoginJWT(handler)       // 登录jwt
-	return []gin.HandlerFunc{corsConfig, rateLimit, log, loginJWT}
+	return []gin.HandlerFunc{corsConfig, rateLimit, log, errorLog, loginJWT}
 }
 
 // initCorsConfig 跨域配置
@@ -49,6 +50,10 @@ func initCorsConfig() gin.HandlerFunc {
 		},
 		MaxAge: 12 * time.Hour, //缓存时间
 	})
+}
+
+func initErrorLog(logger *zap.Logger) gin.HandlerFunc {
+	return middleware.NewErrorLogMiddleware(logger).Build()
 }
 
 // initLogger 初始化日志
