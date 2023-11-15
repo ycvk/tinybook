@@ -17,13 +17,15 @@ import (
 	"time"
 )
 
-func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler, wechatHandler *web.OAuth2WechatHandler) *gin.Engine {
+func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler, wechatHandler *web.OAuth2WechatHandler, articleHandler *web.ArticleHandler) *gin.Engine {
 	engine := gin.Default()
 	// 注册中间件
 	engine.Use(handlerFunc...)
 	// 注册用户路由
 	userHandler.RegisterRoutes(engine)
-	// 注册oauth2路由
+	// 注册文章路由
+	articleHandler.RegisterRoutes(engine)
+	// 注册wechat oauth2路由
 	wechatHandler.RegisterRoutes(engine)
 	return engine
 }

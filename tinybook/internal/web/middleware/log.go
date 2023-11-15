@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"github.com/gin-gonic/gin"
 	"io"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -57,9 +59,11 @@ func (builder *LogMiddlewareBuilder) Build() gin.HandlerFunc {
 		if builder.allowPrintReqBody {
 			data, _ := ctx.GetRawData()
 			if len(data) > 2048 {
-				accessLog.ReqBody = string(data[:2048])
+				unquote, _ := unicodeToZH(data[:2048])
+				accessLog.ReqBody = string(unquote)
 			} else {
-				accessLog.ReqBody = string(data)
+				unquote, _ := unicodeToZH(data)
+				accessLog.ReqBody = string(unquote)
 			}
 			ctx.Request.Body = io.NopCloser(bytes.NewBuffer(data))
 		}
@@ -86,7 +90,8 @@ type responseWriter struct {
 }
 
 func (rw *responseWriter) Write(data []byte) (int, error) {
-	rw.al.RespBody = string(data)
+	zh, _ := unicodeToZH(data)
+	rw.al.RespBody = string(zh)
 	return rw.ResponseWriter.Write(data)
 }
 
@@ -97,4 +102,13 @@ func (rw *responseWriter) WriteString(s string) (int, error) {
 func (rw *responseWriter) WriteHeader(code int) {
 	rw.al.Status = code
 	rw.ResponseWriter.WriteHeader(code)
+}
+
+// unicodeToZH unicode转中文
+func unicodeToZH(raw []byte) ([]byte, error) {
+	str, err := strconv.Unquote(strings.Replace(strconv.Quote(string(raw)), `\\u`, `\u`, -1))
+	if err != nil {
+		return nil, err
+	}
+	return []byte(str), nil
 }
