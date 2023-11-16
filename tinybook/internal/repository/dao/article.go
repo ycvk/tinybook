@@ -2,12 +2,14 @@ package dao
 
 import (
 	"context"
+	"github.com/cockroachdb/errors"
 	"gorm.io/gorm"
 	"time"
 )
 
 type ArticleDAO interface {
 	Insert(ctx context.Context, article Article) (int64, error)
+	UpdateById(ctx context.Context, article Article) error
 }
 
 type Article struct {
@@ -21,6 +23,23 @@ type Article struct {
 
 type GormArticleDAO struct {
 	db *gorm.DB
+}
+
+func (g *GormArticleDAO) UpdateById(ctx context.Context, article Article) error {
+	updates := g.db.WithContext(ctx).Model(&article).
+		Where("id = ? AND author_id = ?", article.ID, article.AuthorId).
+		Updates(map[string]any{
+			"title":   article.Title,
+			"content": article.Content,
+			"utime":   time.Now().Unix(),
+		})
+	if updates.Error != nil {
+		return updates.Error
+	}
+	if updates.RowsAffected == 0 {
+		return errors.New("作者ID与文章ID不匹配")
+	}
+	return nil
 }
 
 func NewGormArticleDAO(db *gorm.DB) ArticleDAO {

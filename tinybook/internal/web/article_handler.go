@@ -21,6 +21,7 @@ func NewArticleHandler(service service.ArticleService, l *zap.Logger) *ArticleHa
 
 func (h *ArticleHandler) Edit(ctx *gin.Context) {
 	type Req struct {
+		Id      int64  `json:"id"`
 		Title   string `json:"title"`
 		Content string `json:"content"`
 	}
@@ -34,6 +35,7 @@ func (h *ArticleHandler) Edit(ctx *gin.Context) {
 	}
 	claims := (ctx.MustGet("userClaims")).(jwt.UserClaims)
 	id, err := h.service.Save(ctx, domain.Article{
+		ID:      req.Id,
 		Title:   req.Title,
 		Content: req.Content,
 		Author:  domain.Author{ID: claims.Uid},
