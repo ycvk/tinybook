@@ -35,5 +35,7 @@ mock:
 	@mockgen -source=internal/service/sms/failover/retry/retry_task.go -package=retry -destination=internal/service/sms/failover/retry/async_retry_mock.go
 	# 生成sms error monitor mock文件
 	@mockgen -source=internal/service/sms/failover/retry/error_rate_monitor.go -package=retry -destination=internal/service/sms/failover/retry/error_rate_monitor_mock.go
+	# 生成article repository mock文件
+	@mockgen -source=internal/repository/article.go -package=repomocks -destination=internal/repository/mocks/article_mock.go
 	# 解决依赖
 	@go mod tidy

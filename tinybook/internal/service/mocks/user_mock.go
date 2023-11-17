@@ -69,8 +69,8 @@ func (mr *MockUserServiceMockRecorder) Login(ctx, email, password any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockUserService)(nil).Login), ctx, email, password)
 }
 
-// LoginOrSignup mocks base method.
-func (m *MockUserService) LoginOrSignup(ctx *gin.Context, phone string) (domain.User, error) {
+// LoginOrSignupByPhone mocks base method.
+func (m *MockUserService) LoginOrSignupByPhone(ctx *gin.Context, phone string) (domain.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoginOrSignupByPhone", ctx, phone)
 	ret0, _ := ret[0].(domain.User)
@@ -78,10 +78,25 @@ func (m *MockUserService) LoginOrSignup(ctx *gin.Context, phone string) (domain.
 	return ret0, ret1
 }
 
-// LoginOrSignup indicates an expected call of LoginOrSignup.
-func (mr *MockUserServiceMockRecorder) LoginOrSignup(ctx, phone any) *gomock.Call {
+// LoginOrSignupByPhone indicates an expected call of LoginOrSignupByPhone.
+func (mr *MockUserServiceMockRecorder) LoginOrSignupByPhone(ctx, phone any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoginOrSignupByPhone", reflect.TypeOf((*MockUserService)(nil).LoginOrSignup), ctx, phone)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoginOrSignupByPhone", reflect.TypeOf((*MockUserService)(nil).LoginOrSignupByPhone), ctx, phone)
+}
+
+// LoginOrSignupByWechat mocks base method.
+func (m *MockUserService) LoginOrSignupByWechat(ctx *gin.Context, wechatInfo domain.WechatInfo) (domain.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoginOrSignupByWechat", ctx, wechatInfo)
+	ret0, _ := ret[0].(domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LoginOrSignupByWechat indicates an expected call of LoginOrSignupByWechat.
+func (mr *MockUserServiceMockRecorder) LoginOrSignupByWechat(ctx, wechatInfo any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoginOrSignupByWechat", reflect.TypeOf((*MockUserService)(nil).LoginOrSignupByWechat), ctx, wechatInfo)
 }
 
 // Profile mocks base method.

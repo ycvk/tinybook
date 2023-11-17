@@ -4,12 +4,14 @@ import (
 	"context"
 	"github.com/cockroachdb/errors"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"time"
 )
 
 type ArticleDAO interface {
 	Insert(ctx context.Context, article Article) (int64, error)
 	UpdateById(ctx context.Context, article Article) error
+	Sync(ctx context.Context, dao Article) (int64, error)
 }
 
 type Article struct {
@@ -21,8 +23,45 @@ type Article struct {
 	Utime    int64  `gorm:"column:utime" json:"utime"`
 }
 
+type PublishedArticle Article
+
 type GormArticleDAO struct {
 	db *gorm.DB
+}
+
+func (g *GormArticleDAO) Sync(ctx context.Context, article Article) (int64, error) {
+	txErr := g.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		articleDAO := NewGormArticleDAO(tx) // 事务中的DAO
+		if article.ID > 0 {                 // 更新
+			if err := articleDAO.UpdateById(ctx, article); err != nil {
+				return err
+			}
+		} else { // 新增
+			id, err := articleDAO.Insert(ctx, article)
+			if err != nil {
+				return err
+			}
+			article.ID = id
+		}
+		now := time.Now().Unix()
+		publishedArticle := PublishedArticle(article)
+		publishedArticle.Ctime, publishedArticle.Utime = now, now // 更新发布时间 & 更新时间
+
+		err := tx.Clauses(clause.OnConflict{
+			// id更新冲突时，只更新title、content、utime字段
+			Columns: []clause.Column{{Name: "id"}},
+			DoUpdates: clause.Assignments(map[string]interface{}{
+				"title":   publishedArticle.Title,
+				"content": publishedArticle.Content,
+				"utime":   now,
+			}),
+		}).Create(&publishedArticle).Error
+		return err
+	})
+	if txErr != nil {
+		return 0, txErr
+	}
+	return article.ID, nil
 }
 
 func (g *GormArticleDAO) UpdateById(ctx context.Context, article Article) error {
