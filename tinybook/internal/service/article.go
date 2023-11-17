@@ -20,10 +20,12 @@ func NewArticleService(repo repository.ArticleRepository) ArticleService {
 }
 
 func (a *articleService) Publish(ctx context.Context, article domain.Article) (int64, error) {
+	article.Status = domain.ArticleStatusPublished // 已发布
 	return a.repo.Sync(ctx, article)
 }
 
 func (a *articleService) Save(ctx context.Context, article domain.Article) (int64, error) {
+	article.Status = domain.ArticleStatusUnpublished // 未发布
 	if article.ID > 0 {
 		return article.ID, a.repo.Update(ctx, article)
 	}

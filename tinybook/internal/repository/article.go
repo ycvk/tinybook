@@ -38,5 +38,6 @@ func (c *CachedArticleRepository) domainToDao(article domain.Article) dao.Articl
 		Title:    article.Title,
 		Content:  article.Content,
 		AuthorId: article.Author.ID,
+		Status:   uint8(article.Status),
 	}
 }
