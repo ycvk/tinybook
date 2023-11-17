@@ -12,6 +12,7 @@ type ArticleDAO interface {
 	Insert(ctx context.Context, article Article) (int64, error)
 	UpdateById(ctx context.Context, article Article) error
 	Sync(ctx context.Context, dao Article) (int64, error)
+	SyncStatus(ctx context.Context, dao Article, u uint8) error
 }
 
 type Article struct {
@@ -32,6 +33,30 @@ type GormArticleDAO struct {
 
 func NewGormArticleDAO(db *gorm.DB) ArticleDAO {
 	return &GormArticleDAO{db: db}
+}
+
+func (g *GormArticleDAO) SyncStatus(ctx context.Context, dao Article, u uint8) error {
+	return g.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		now := time.Now().Unix()
+		updates := tx.Model(&Article{}).
+			Where("id = ? and author_id = ?", dao.ID, dao.AuthorId). // 判断作者ID与文章ID是否匹配
+			Updates(map[string]any{
+				"status": u,
+				"utime":  now,
+			})
+		if updates.Error != nil {
+			return updates.Error
+		}
+		if updates.RowsAffected == 0 {
+			return errors.New("作者ID与文章ID不匹配")
+		}
+		return tx.Model(&PublishedArticle{}).
+			Where("id = ?", dao.ID). // 前面已经判断了author_id，这里不需要再判断
+			Updates(map[string]any{
+				"status": u,
+				"utime":  now,
+			}).Error
+	})
 }
 
 func (g *GormArticleDAO) Sync(ctx context.Context, article Article) (int64, error) {
@@ -55,7 +80,7 @@ func (g *GormArticleDAO) Sync(ctx context.Context, article Article) (int64, erro
 		err := tx.Clauses(clause.OnConflict{
 			// id更新冲突时，只更新title、content、utime字段
 			Columns: []clause.Column{{Name: "id"}},
-			DoUpdates: clause.Assignments(map[string]interface{}{
+			DoUpdates: clause.Assignments(map[string]any{
 				"title":   publishedArticle.Title,
 				"content": publishedArticle.Content,
 				"status":  publishedArticle.Status,

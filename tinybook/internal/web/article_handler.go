@@ -91,8 +91,46 @@ func (h *ArticleHandler) Publish(ctx *gin.Context) {
 	})
 }
 
+func (h *ArticleHandler) Withdraw(ctx *gin.Context) {
+	type Req struct {
+		Id int64 `json:"id"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 400,
+			Msg:  "参数错误",
+		})
+		return
+	}
+	claims := (ctx.MustGet("userClaims")).(jwt.UserClaims)
+	err := h.service.Withdraw(ctx, domain.Article{
+		ID: req.Id,
+		Author: domain.Author{
+			ID: claims.Uid,
+		},
+	})
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 500,
+			Msg:  "服务器错误",
+		})
+		h.l.Error("撤回文章失败, 作者ID: "+
+			strconv.FormatInt(claims.Uid, 10)+
+			" 文章ID: "+strconv.FormatInt(req.Id, 10),
+			zap.Error(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Code: 200,
+		Msg:  "撤回成功",
+		Data: req.Id,
+	})
+}
+
 func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 	group := engine.Group("/articles")
 	group.POST("/edit", h.Edit)
 	group.POST("/publish", h.Publish)
+	group.POST("/withdraw", h.Withdraw)
 }
