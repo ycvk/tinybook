@@ -1,12 +1,14 @@
 package main
 
 import (
+	"geek_homework/tinybook/ioc"
 	"github.com/spf13/viper"
 	_ "github.com/spf13/viper/remote"
 )
 
 func main() {
 	initViper()
+	ioc.InitSnowflake()
 	engine := InitWebServer()
 	err := engine.Run(":8081")
 	if err != nil {
