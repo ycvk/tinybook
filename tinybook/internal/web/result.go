@@ -7,6 +7,6 @@ type Result struct {
 }
 
 type Page struct {
-	Offset int
-	Limit  int
+	Offset int `json:"offset"`
+	Limit  int `json:"limit"`
 }

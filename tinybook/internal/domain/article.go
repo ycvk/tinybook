@@ -12,13 +12,14 @@ type Article struct {
 }
 
 type ArticleVo struct {
-	ID      int64  `json:"id"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
-	Author  string `json:"author"`
-	Status  string `json:"status"`
-	Ctime   string `json:"ctime"`
-	Utime   string `json:"utime"`
+	ID       int64  `json:"id,omitempty"`
+	Title    string `json:"title,omitempty"`
+	Content  string `json:"content,omitempty"`
+	Abstract string `json:"abstract,omitempty"`
+	Author   string `json:"author,omitempty"`
+	Status   string `json:"status,omitempty"`
+	Ctime    string `json:"ctime,omitempty"`
+	Utime    string `json:"utime,omitempty"`
 }
 
 type Author struct {

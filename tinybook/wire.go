@@ -26,7 +26,7 @@ func InitWebServer() *gin.Engine {
 		// 初始化sms模块
 		ioc.InitSMSService, repository.NewGormSMSRepository, dao.NewGormSMSDAO,
 		// 初始化article模块
-		repository.NewCachedArticleRepository, dao.NewMongoDBArticleDAO, service.NewArticleService,
+		repository.NewCachedArticleRepository, dao.NewMongoDBArticleDAO, service.NewArticleService, cache.NewRedisArticleCache,
 		// 初始化oauth2模块
 		ioc.InitWechatService,
 		// 初始化handler

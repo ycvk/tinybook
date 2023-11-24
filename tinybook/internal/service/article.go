@@ -27,13 +27,14 @@ func (a *articleService) GetArticlesByAuthor(ctx context.Context, uid int64, lim
 	}
 	return lo.Map(articles, func(arts domain.Article, index int) domain.ArticleVo {
 		return domain.ArticleVo{
-			ID:      arts.ID,
-			Title:   arts.Title,
-			Content: arts.Content,
-			Author:  strconv.FormatInt(arts.Author.ID, 10),
-			Status:  strconv.FormatUint(uint64(arts.Status), 10),
-			Ctime:   time.Unix(arts.Ctime, 0).Format("2006-01-02 15:04:05"),
-			Utime:   time.Unix(arts.Utime, 0).Format("2006-01-02 15:04:05"),
+			ID:    arts.ID,
+			Title: arts.Title,
+			//Content:  arts.Content,
+			Abstract: arts.Abstract,
+			Author:   strconv.FormatInt(arts.Author.ID, 10),
+			Status:   strconv.FormatUint(uint64(arts.Status), 10),
+			Ctime:    time.Unix(arts.Ctime, 0).Format("2006-01-02 15:04:05"),
+			Utime:    time.Unix(arts.Utime, 0).Format("2006-01-02 15:04:05"),
 		}
 	}), nil
 }
