@@ -22,6 +22,8 @@ type ArticleRepository interface {
 	SetFirstPage(ctx context.Context, uid int64, articles []domain.Article) error
 	DelFirstPage(ctx context.Context, uid int64) error
 	GetArticleById(ctx context.Context, id int64) (domain.Article, error)
+	SetCache(ctx context.Context, key int64, article domain.Article, expire time.Duration) error
+	GetCache(ctx context.Context, key int64) (domain.Article, error)
 }
 
 type CachedArticleRepository struct {
@@ -30,7 +32,34 @@ type CachedArticleRepository struct {
 	log   *zap.Logger
 }
 
+func (c *CachedArticleRepository) SetCache(ctx context.Context, key int64, art domain.Article, expire time.Duration) error {
+	articleKey := c.GetCacheArticleKey(key)
+	marshal, err := sonic.Marshal(art)
+	if err != nil {
+		return err
+	}
+	return c.cache.Set(ctx, articleKey, marshal, expire)
+}
+
+func (c *CachedArticleRepository) GetCache(ctx context.Context, key int64) (domain.Article, error) {
+	articleKey := c.GetCacheArticleKey(key)
+	bytes, err := c.cache.Get(ctx, articleKey)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	var res domain.Article
+	err = sonic.Unmarshal(bytes, &res)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	return res, nil
+}
+
 func (c *CachedArticleRepository) GetArticleById(ctx context.Context, id int64) (domain.Article, error) {
+	cacheRes, err := c.GetCache(ctx, id)
+	if err == nil {
+		return cacheRes, nil
+	}
 	article, err := c.dao.GetArticleById(ctx, id)
 	if err != nil {
 		return domain.Article{}, err
@@ -39,11 +68,11 @@ func (c *CachedArticleRepository) GetArticleById(ctx context.Context, id int64) 
 }
 
 func (c *CachedArticleRepository) DelFirstPage(ctx context.Context, uid int64) error {
-	return c.cache.Delete(ctx, c.GetCacheKey(uid))
+	return c.cache.Delete(ctx, c.GetCachePageKey(uid))
 }
 
 func (c *CachedArticleRepository) SetFirstPage(ctx context.Context, uid int64, articles []domain.Article) error {
-	key := c.GetCacheKey(uid)
+	key := c.GetCachePageKey(uid)
 	// 只需要缓存文章的摘要
 	i := lo.Map(articles, func(article domain.Article, index int) domain.Article {
 		article.Content = article.Abstract
@@ -56,12 +85,16 @@ func (c *CachedArticleRepository) SetFirstPage(ctx context.Context, uid int64, a
 	return c.cache.Set(ctx, key, marshal, 30*time.Minute)
 }
 
-func (c *CachedArticleRepository) GetCacheKey(uid int64) string {
-	return strconv.FormatInt(uid, 10) + "_first_page"
+func (c *CachedArticleRepository) GetCachePageKey(uid int64) string {
+	return "first_page:" + strconv.FormatInt(uid, 10)
+}
+
+func (c *CachedArticleRepository) GetCacheArticleKey(id int64) string {
+	return "article:" + strconv.FormatInt(id, 10)
 }
 
 func (c *CachedArticleRepository) GetFirstPage(ctx context.Context, uid int64, limit int) ([]domain.Article, error) {
-	bytes, err := c.cache.Get(ctx, c.GetCacheKey(uid))
+	bytes, err := c.cache.Get(ctx, c.GetCachePageKey(uid))
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +122,9 @@ func (c *CachedArticleRepository) GetArticlesByAuthor(ctx context.Context, uid i
 		return nil, err
 	}
 	go func() { //异步更新缓存
+		if offset != 0 || limit > 100 { //如果不是第一页，或者limit大于100，没有必要更新缓存
+			return
+		}
 		firstPageRes, err2 := c.dao.GetArticlesByAuthor(ctx, uid, 100, 0)
 		if err2 != nil {
 			c.log.Error("get first page from db failed", zap.Error(err2))
@@ -101,6 +137,18 @@ func (c *CachedArticleRepository) GetArticlesByAuthor(ctx context.Context, uid i
 		if err2 != nil {
 			c.log.Error("set first page to cache failed", zap.Error(err2))
 			return
+		}
+	}()
+	go func() { //异步预加载第一个文章到缓存
+		if len(articles) > 0 {
+			article := articles[0]
+			timeout, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancelFunc()
+			err2 := c.SetCache(timeout, article.ID, c.daoToDomain(article), time.Minute)
+			if err2 != nil {
+				c.log.Warn("preset article to cache failed", zap.Error(err2))
+				return
+			}
 		}
 	}()
 	return lo.Map(articles, func(article dao.Article, index int) domain.Article {
