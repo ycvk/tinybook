@@ -21,12 +21,21 @@ type ArticleRepository interface {
 	GetFirstPage(ctx context.Context, uid int64, limit int) ([]domain.Article, error)
 	SetFirstPage(ctx context.Context, uid int64, articles []domain.Article) error
 	DelFirstPage(ctx context.Context, uid int64) error
+	GetArticleById(ctx context.Context, id int64) (domain.Article, error)
 }
 
 type CachedArticleRepository struct {
 	dao   dao.ArticleDAO
 	cache cache.ArticleCache
 	log   *zap.Logger
+}
+
+func (c *CachedArticleRepository) GetArticleById(ctx context.Context, id int64) (domain.Article, error) {
+	article, err := c.dao.GetArticleById(ctx, id)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	return c.daoToDomain(article), nil
 }
 
 func (c *CachedArticleRepository) DelFirstPage(ctx context.Context, uid int64) error {

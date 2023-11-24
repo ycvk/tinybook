@@ -129,7 +129,36 @@ func (h *ArticleHandler) Withdraw(ctx *gin.Context) {
 }
 
 func (h *ArticleHandler) Detail(context *gin.Context) {
-
+	param := context.Param("id")
+	id, err := strconv.ParseInt(param, 10, 64)
+	if err != nil {
+		context.JSON(http.StatusOK, Result{
+			Code: 400,
+			Msg:  "参数错误",
+		})
+		return
+	}
+	claims := (context.MustGet("userClaims")).(jwt.UserClaims)
+	article, err := h.service.GetArticleById(context, id)
+	if strconv.FormatInt(claims.Uid, 10) != article.Author {
+		context.JSON(http.StatusOK, Result{
+			Code: 401,
+			Msg:  "无权限",
+		})
+	}
+	if err != nil {
+		context.JSON(http.StatusOK, Result{
+			Code: 500,
+			Msg:  "服务器错误",
+		})
+		h.l.Error("获取文章详情失败, 文章ID: "+strconv.FormatInt(id, 10), zap.Error(err))
+		return
+	}
+	context.JSON(http.StatusOK, Result{
+		Code: 200,
+		Msg:  "获取成功",
+		Data: article,
+	})
 }
 
 func (h *ArticleHandler) List(context *gin.Context) {
