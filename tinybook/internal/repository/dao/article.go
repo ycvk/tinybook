@@ -16,6 +16,7 @@ type ArticleDAO interface {
 	UpdateById(ctx context.Context, article Article) error
 	Sync(ctx context.Context, dao Article) (int64, error)
 	SyncStatus(ctx context.Context, dao Article, u uint8) error
+	GetArticlesByAuthor(ctx context.Context, uid int64, limit int, offset int) ([]Article, error)
 }
 
 type Article struct {
@@ -32,6 +33,18 @@ type PublishedArticle Article
 
 type GormArticleDAO struct {
 	db *gorm.DB
+}
+
+func (g *GormArticleDAO) GetArticlesByAuthor(ctx context.Context, uid int64, limit int, offset int) ([]Article, error) {
+	var articles []Article
+	err := g.db.WithContext(ctx).
+		Where("author_id = ?", uid).
+		Order("utime desc").
+		Limit(limit).
+		Offset(offset).
+		Find(&articles).
+		Error
+	return articles, err
 }
 
 func NewGormArticleDAO(db *gorm.DB) ArticleDAO {
@@ -135,6 +148,12 @@ func NewMongoDBArticleDAO(db *qmgo.Database) ArticleDAO {
 		coll:          db.Collection("articles"),
 		publishedColl: db.Collection("published_articles"),
 	}
+}
+
+func (m *MongoDBArticleDAO) GetArticlesByAuthor(ctx context.Context, uid int64, limit int, offset int) ([]Article, error) {
+	var articles []Article
+	err := m.coll.Find(ctx, bson.M{"author_id": uid}).Skip(int64(offset)).Limit(int64(limit)).All(&articles)
+	return articles, err
 }
 
 func (m *MongoDBArticleDAO) Insert(ctx context.Context, article Article) (int64, error) {

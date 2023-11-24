@@ -128,9 +128,41 @@ func (h *ArticleHandler) Withdraw(ctx *gin.Context) {
 	})
 }
 
+func (h *ArticleHandler) Detail(context *gin.Context) {
+
+}
+
+func (h *ArticleHandler) List(context *gin.Context) {
+	var page Page
+	if err := context.Bind(&page); err != nil {
+		context.JSON(http.StatusOK, Result{
+			Code: 400,
+			Msg:  "参数错误",
+		})
+		return
+	}
+	claims := (context.MustGet("userClaims")).(jwt.UserClaims)
+	articles, err := h.service.GetArticlesByAuthor(context, claims.Uid, page.Limit, page.Offset)
+	if err != nil {
+		context.JSON(http.StatusOK, Result{
+			Code: 500,
+			Msg:  "服务器错误",
+		})
+		h.l.Error("获取文章列表失败, 作者ID: "+strconv.FormatInt(claims.Uid, 10), zap.Error(err))
+		return
+	}
+	context.JSON(http.StatusOK, Result{
+		Code: 200,
+		Msg:  "获取成功",
+		Data: articles,
+	})
+}
+
 func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 	group := engine.Group("/articles")
 	group.POST("/edit", h.Edit)
 	group.POST("/publish", h.Publish)
 	group.POST("/withdraw", h.Withdraw)
+	group.POST("/list", h.List)
+	group.GET("/detail/:id", h.Detail)
 }
