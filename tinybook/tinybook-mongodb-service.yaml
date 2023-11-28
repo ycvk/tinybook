@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tinybook-mongodb
+spec:
+  selector:
+    app: tinybook-mongodb
+  ports:
+    - protocol: TCP
+      nodePort: 30003
+      port: 27018
+      targetPort: 27017
+  type: NodePort

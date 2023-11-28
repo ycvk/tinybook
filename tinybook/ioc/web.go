@@ -1,7 +1,6 @@
 package ioc
 
 import (
-	"geek_homework/tinybook/config"
 	"geek_homework/tinybook/internal/web"
 	"geek_homework/tinybook/internal/web/jwt"
 	"geek_homework/tinybook/internal/web/middleware"
@@ -12,6 +11,7 @@ import (
 	redisSession "github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"strings"
 	"time"
@@ -78,10 +78,18 @@ func initRateLimit(redisClient redis.Cmdable) gin.HandlerFunc {
 
 // initLoginSession 初始化登录session
 func initLoginSession(engine *gin.Engine) {
+	type Config struct {
+		Host string `yaml:"addr"`
+	}
+	var cfg Config
+	err2 := viper.UnmarshalKey("redis", &cfg)
+	if err2 != nil {
+		panic(err2)
+	}
 	loginMiddleware := middleware.LoginMiddlewareBuilder{}
 	store, err := redisSession.NewStore(16,
 		"tcp",
-		config.Config.Redis.Host,
+		cfg.Host,
 		"",
 		[]byte("zcPbUOs7zYO1ky2WgE14chotKwcp95Hp"), //authentication key 身份验证密钥
 		[]byte("GdGvU8pRs439iNREpNtl1gZhY7jU8zRt"), //encryption key 加密密钥

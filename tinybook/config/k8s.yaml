@@ -1,0 +1,11 @@
+db:
+  dsn: "root:root@tcp(tinybook-mysql:3308)/tinybook?charset=utf8mb4&parseTime=True&loc=Local"
+redis:
+  addr: "tinybook-redis:6380"
+mongodb:
+  ip: "tinybook-mongodb"
+  port: "27018"
+  username: "root"
+  password: "123456"
+  database: "tinybook"
+  authSource: "admin"

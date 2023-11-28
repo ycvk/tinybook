@@ -5,6 +5,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/qiniu/qmgo"
 	"github.com/qiniu/qmgo/options"
+	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/event"
 	mgoptions "go.mongodb.org/mongo-driver/mongo/options"
@@ -13,14 +14,28 @@ import (
 )
 
 func InitMongoDB(zipLog *zap.Logger) *qmgo.Database {
-	const (
-		Ip         = "127.0.0.1"
-		Port       = "27017"
-		UserName   = "root"
-		Password   = "123456"
-		DBName     = "tinybook"
-		AuthSource = "admin"
-	)
+	//const (
+	//	Ip         = "127.0.0.1"
+	//	Port       = "27017"
+	//	UserName   = "root"
+	//	Password   = "123456"
+	//	DBName     = "tinybook"
+	//	AuthSource = "admin"
+	//)
+
+	type Config struct {
+		Ip         string `yaml:"ip"`
+		Port       string `yaml:"port"`
+		UserName   string `yaml:"username"`
+		Password   string `yaml:"password"`
+		DBName     string `yaml:"dbname"`
+		AuthSource string `yaml:"authSource"`
+	}
+	var cfg Config
+	viperErr := viper.UnmarshalKey("mongodb", &cfg)
+	if viperErr != nil {
+		panic(viperErr)
+	}
 
 	var (
 		ConnectTimeoutMS = int64(1000)    // 连接超时时间
@@ -32,12 +47,12 @@ func InitMongoDB(zipLog *zap.Logger) *qmgo.Database {
 	ctx := context.Background()
 	// 拼接MongoDB Url
 	var mongoUrl string
-	if Password != "" {
-		mongoUrl = "mongodb://" + UserName + ":" + Password + "@" +
-			Ip + ":" + Port + "/" + DBName +
-			"?authSource=" + AuthSource
+	if cfg.Password != "" {
+		mongoUrl = "mongodb://" + cfg.UserName + ":" + cfg.Password + "@" +
+			cfg.Ip + ":" + cfg.Port + "/" + cfg.DBName +
+			"?authSource=" + cfg.AuthSource
 	} else {
-		mongoUrl = "mongodb://" + Ip + ":" + Port
+		mongoUrl = "mongodb://" + cfg.Ip + ":" + cfg.Port
 	}
 
 	// 创建cmdMonitor，用于打印SQL
@@ -92,7 +107,7 @@ func InitMongoDB(zipLog *zap.Logger) *qmgo.Database {
 		panic(err)
 	}
 	// 选择数据库
-	db := client.Database(DBName)
+	db := client.Database(cfg.DBName)
 	// 在初始化成功后，测试使用完毕请defer来关闭连接
 	//defer func() {
 	//	if err = client.Close(ctx); err != nil {
