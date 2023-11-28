@@ -34,7 +34,7 @@ func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler, 
 func InitHandlerFunc(redisClient redis.Cmdable, handler jwt.Handler, logger *zap.Logger) []gin.HandlerFunc {
 	corsConfig := initCorsConfig()          // 跨域配置
 	rateLimit := initRateLimit(redisClient) // 限流器
-	log := initLogger(logger)               // 日志
+	log := initLogger(logger)               // 日志 todo 本地开发时，可以注释掉
 	errorLog := initErrorLog(logger)        // 错误日志
 	loginJWT := initLoginJWT(handler)       // 登录jwt
 	return []gin.HandlerFunc{corsConfig, rateLimit, log, errorLog, loginJWT}

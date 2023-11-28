@@ -7,5 +7,5 @@ mongodb:
   port: "27018"
   username: "root"
   password: "123456"
-  database: "tinybook"
+  dbname: "tinybook"
   authSource: "admin"
