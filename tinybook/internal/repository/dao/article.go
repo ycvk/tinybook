@@ -18,6 +18,7 @@ type ArticleDAO interface {
 	SyncStatus(ctx context.Context, dao Article, u uint8) error
 	GetArticlesByAuthor(ctx context.Context, uid int64, limit int, offset int) ([]Article, error)
 	GetArticleById(ctx context.Context, id int64) (Article, error)
+	GetPubArticleById(ctx context.Context, id int64) (PublishedArticle, error)
 }
 
 type Article struct {
@@ -34,6 +35,12 @@ type PublishedArticle Article
 
 type GormArticleDAO struct {
 	db *gorm.DB
+}
+
+func (g *GormArticleDAO) GetPubArticleById(ctx context.Context, id int64) (PublishedArticle, error) {
+	var publishedArticle PublishedArticle
+	err := g.db.WithContext(ctx).Where("id = ?", id).First(&publishedArticle).Error
+	return publishedArticle, err
 }
 
 func (g *GormArticleDAO) GetArticleById(ctx context.Context, id int64) (Article, error) {
@@ -147,6 +154,12 @@ type MongoDBArticleDAO struct {
 	db            *qmgo.Database
 	coll          *qmgo.Collection
 	publishedColl *qmgo.Collection
+}
+
+func (m *MongoDBArticleDAO) GetPubArticleById(ctx context.Context, id int64) (PublishedArticle, error) {
+	var article PublishedArticle
+	err := m.publishedColl.Find(ctx, bson.M{"id": id}).One(&article)
+	return article, err
 }
 
 func (m *MongoDBArticleDAO) GetArticleById(ctx context.Context, id int64) (Article, error) {

@@ -187,11 +187,38 @@ func (h *ArticleHandler) List(context *gin.Context) {
 	})
 }
 
+func (h *ArticleHandler) PubDetail(context *gin.Context) {
+	param := context.Param("id")
+	id, err := strconv.ParseInt(param, 10, 64)
+	if err != nil {
+		context.JSON(http.StatusOK, Result{
+			Code: 400,
+			Msg:  "参数错误",
+		})
+		return
+	}
+	article, err := h.service.GetPubArticleById(context, id)
+	if err != nil {
+		context.JSON(http.StatusOK, Result{
+			Code: 500,
+			Msg:  "服务器错误",
+		})
+		h.l.Error("读者获取文章详情失败, 文章ID: "+strconv.FormatInt(id, 10), zap.Error(err))
+		return
+	}
+	context.JSON(http.StatusOK, Result{
+		Code: 200,
+		Msg:  "获取成功",
+		Data: article,
+	})
+}
+
 func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 	group := engine.Group("/articles")
-	group.POST("/edit", h.Edit)
-	group.POST("/publish", h.Publish)
-	group.POST("/withdraw", h.Withdraw)
-	group.POST("/list", h.List)
-	group.GET("/detail/:id", h.Detail)
+	group.POST("/edit", h.Edit)               // 编辑文章
+	group.POST("/publish", h.Publish)         // 发表文章
+	group.POST("/withdraw", h.Withdraw)       // 撤回文章
+	group.POST("/list", h.List)               // 文章列表
+	group.GET("/detail/:id", h.Detail)        // 文章详情
+	group.GET("/pub/detail/:id", h.PubDetail) // 读者查看文章详情
 }

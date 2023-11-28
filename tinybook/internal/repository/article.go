@@ -6,10 +6,25 @@ import (
 	"geek_homework/tinybook/internal/repository/cache"
 	"geek_homework/tinybook/internal/repository/dao"
 	"github.com/bytedance/sonic"
+	"github.com/cockroachdb/errors"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"strconv"
 	"time"
+)
+
+const (
+	PubArticleKey       = "article:pub:"
+	ArticleKey          = "article:"
+	ArticleFirstPageKey = "article:first_page:"
+)
+
+type ArticleType int
+
+const (
+	ArticleUnknown ArticleType = iota
+	ArticleAuthor
+	ArticleReader
 )
 
 type ArticleRepository interface {
@@ -22,18 +37,58 @@ type ArticleRepository interface {
 	SetFirstPage(ctx context.Context, uid int64, articles []domain.Article) error
 	DelFirstPage(ctx context.Context, uid int64) error
 	GetArticleById(ctx context.Context, id int64) (domain.Article, error)
-	SetCache(ctx context.Context, key int64, article domain.Article, expire time.Duration) error
-	GetCache(ctx context.Context, key int64) (domain.Article, error)
+	SetCache(ctx context.Context, key int64, articleType ArticleType, article domain.Article, expire time.Duration) error
+	GetCache(ctx context.Context, key int64, articleType ArticleType) (domain.Article, error)
+	DelCache(ctx context.Context, key int64, articleType ArticleType) error
+	GetPubArticleById(ctx context.Context, id int64) (domain.Article, error)
 }
 
 type CachedArticleRepository struct {
-	dao   dao.ArticleDAO
-	cache cache.ArticleCache
-	log   *zap.Logger
+	dao      dao.ArticleDAO
+	cache    cache.ArticleCache
+	userRepo UserRepository
+	log      *zap.Logger
 }
 
-func (c *CachedArticleRepository) SetCache(ctx context.Context, key int64, art domain.Article, expire time.Duration) error {
-	articleKey := c.GetCacheArticleKey(key)
+func (c *CachedArticleRepository) GetPubArticleById(ctx context.Context, id int64) (domain.Article, error) {
+	getCache, err := c.GetCache(ctx, id, ArticleReader)
+	if err == nil {
+		return getCache, nil
+	}
+	article, err := c.dao.GetPubArticleById(ctx, id)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	// 获取作者信息
+	user, err := c.userRepo.FindById(ctx, article.AuthorId)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	toDomain := c.daoToDomain(dao.Article(article))
+	toDomain.Author.Name = user.Nickname
+	go func() {
+		timeout, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancelFunc()
+		err2 := c.SetCache(timeout, article.ID, ArticleReader, toDomain, 3*24*time.Hour)
+		if err2 != nil {
+			c.log.Warn("preset published article to cache failed", zap.Error(err2))
+			return
+		}
+	}()
+	return toDomain, nil
+}
+
+func (c *CachedArticleRepository) SetCache(ctx context.Context, key int64, articleType ArticleType, art domain.Article, expire time.Duration) error {
+	var articleKey string
+	// 根据文章类型，选择不同的缓存key
+	switch articleType {
+	case ArticleAuthor:
+		articleKey = c.GetCacheArticleKey(key)
+	case ArticleReader:
+		articleKey = c.GetPubCacheArticleKey(key)
+	default:
+		return errors.New("unknown article type")
+	}
 	marshal, err := sonic.Marshal(art)
 	if err != nil {
 		return err
@@ -41,8 +96,17 @@ func (c *CachedArticleRepository) SetCache(ctx context.Context, key int64, art d
 	return c.cache.Set(ctx, articleKey, marshal, expire)
 }
 
-func (c *CachedArticleRepository) GetCache(ctx context.Context, key int64) (domain.Article, error) {
-	articleKey := c.GetCacheArticleKey(key)
+func (c *CachedArticleRepository) GetCache(ctx context.Context, key int64, articleType ArticleType) (domain.Article, error) {
+	var articleKey string
+	// 根据文章类型，选择不同的缓存key
+	switch articleType {
+	case ArticleAuthor:
+		articleKey = c.GetCacheArticleKey(key)
+	case ArticleReader:
+		articleKey = c.GetPubCacheArticleKey(key)
+	default:
+		return domain.Article{}, errors.New("unknown article type")
+	}
 	bytes, err := c.cache.Get(ctx, articleKey)
 	if err != nil {
 		return domain.Article{}, err
@@ -55,8 +119,22 @@ func (c *CachedArticleRepository) GetCache(ctx context.Context, key int64) (doma
 	return res, nil
 }
 
+func (c *CachedArticleRepository) DelCache(ctx context.Context, key int64, articleType ArticleType) error {
+	var articleKey string
+	// 根据文章类型，选择不同的缓存key
+	switch articleType {
+	case ArticleAuthor:
+		articleKey = c.GetCacheArticleKey(key)
+	case ArticleReader:
+		articleKey = c.GetPubCacheArticleKey(key)
+	default:
+		return errors.New("unknown article type")
+	}
+	return c.cache.Delete(ctx, articleKey)
+}
+
 func (c *CachedArticleRepository) GetArticleById(ctx context.Context, id int64) (domain.Article, error) {
-	cacheRes, err := c.GetCache(ctx, id)
+	cacheRes, err := c.GetCache(ctx, id, ArticleAuthor)
 	if err == nil {
 		return cacheRes, nil
 	}
@@ -86,11 +164,15 @@ func (c *CachedArticleRepository) SetFirstPage(ctx context.Context, uid int64, a
 }
 
 func (c *CachedArticleRepository) GetCachePageKey(uid int64) string {
-	return "first_page:" + strconv.FormatInt(uid, 10)
+	return ArticleFirstPageKey + strconv.FormatInt(uid, 10)
 }
 
 func (c *CachedArticleRepository) GetCacheArticleKey(id int64) string {
-	return "article:" + strconv.FormatInt(id, 10)
+	return ArticleKey + strconv.FormatInt(id, 10)
+}
+
+func (c *CachedArticleRepository) GetPubCacheArticleKey(id int64) string {
+	return PubArticleKey + strconv.FormatInt(id, 10)
 }
 
 func (c *CachedArticleRepository) GetFirstPage(ctx context.Context, uid int64, limit int) ([]domain.Article, error) {
@@ -144,7 +226,7 @@ func (c *CachedArticleRepository) GetArticlesByAuthor(ctx context.Context, uid i
 			article := articles[0]
 			timeout, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancelFunc()
-			err2 := c.SetCache(timeout, article.ID, c.daoToDomain(article), time.Minute)
+			err2 := c.SetCache(timeout, article.ID, ArticleAuthor, c.daoToDomain(article), time.Minute)
 			if err2 != nil {
 				c.log.Warn("preset article to cache failed", zap.Error(err2))
 				return
@@ -156,15 +238,20 @@ func (c *CachedArticleRepository) GetArticlesByAuthor(ctx context.Context, uid i
 	}), nil
 }
 
-func NewCachedArticleRepository(dao dao.ArticleDAO, cache cache.ArticleCache, log *zap.Logger) ArticleRepository {
-	return &CachedArticleRepository{dao: dao, cache: cache, log: log}
+func NewCachedArticleRepository(dao dao.ArticleDAO, cache cache.ArticleCache, userRepo UserRepository, log *zap.Logger) ArticleRepository {
+	return &CachedArticleRepository{dao: dao, cache: cache, userRepo: userRepo, log: log}
 }
 
 func (c *CachedArticleRepository) SyncStatus(ctx context.Context, article domain.Article, articleStatus domain.ArticleStatus) error {
 	err := c.dao.SyncStatus(ctx, c.domainToDao(article), uint8(articleStatus))
 	delErr := c.DelFirstPage(ctx, article.Author.ID)
+	// 删除读者缓存
+	pubErr := c.DelCache(ctx, article.ID, ArticleReader)
 	if delErr != nil {
 		c.log.Error("delete first page from cache failed", zap.Error(delErr))
+	}
+	if pubErr != nil {
+		c.log.Warn("delete article from cache failed", zap.Error(err))
 	}
 	return err
 }
@@ -172,8 +259,13 @@ func (c *CachedArticleRepository) SyncStatus(ctx context.Context, article domain
 func (c *CachedArticleRepository) Sync(ctx context.Context, article domain.Article) (int64, error) {
 	sync, err := c.dao.Sync(ctx, c.domainToDao(article))
 	delErr := c.DelFirstPage(ctx, article.Author.ID)
+	// 删除读者缓存
+	pubErr := c.DelCache(ctx, article.ID, ArticleReader)
 	if delErr != nil {
 		c.log.Error("delete first page from cache failed", zap.Error(delErr))
+	}
+	if pubErr != nil {
+		c.log.Warn("delete article from cache failed", zap.Error(err))
 	}
 	return sync, err
 }

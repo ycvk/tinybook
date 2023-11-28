@@ -46,7 +46,7 @@ func InitWebServer() *gin.Engine {
 	database := ioc.InitMongoDB(logger)
 	articleDAO := dao.NewMongoDBArticleDAO(database)
 	articleCache := cache.NewRedisArticleCache(cmdable)
-	articleRepository := repository.NewCachedArticleRepository(articleDAO, articleCache, logger)
+	articleRepository := repository.NewCachedArticleRepository(articleDAO, articleCache, userRepository, logger)
 	articleService := service.NewArticleService(articleRepository)
 	articleHandler := web.NewArticleHandler(articleService, logger)
 	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler)
