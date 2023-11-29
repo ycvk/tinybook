@@ -3,7 +3,10 @@ package repository
 import (
 	"context"
 	"geek_homework/tinybook/internal/repository/cache"
+	"geek_homework/tinybook/internal/repository/dao"
 )
+
+var DuplicatePhoneError = dao.DuplicatePhoneError
 
 type CodeRepository interface {
 	Set(ctx context.Context, biz, phone, code, timeInterval string) error

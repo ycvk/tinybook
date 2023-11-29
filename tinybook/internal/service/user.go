@@ -1,9 +1,10 @@
 package service
 
 import (
-	"errors"
+	"context"
 	"geek_homework/tinybook/internal/domain"
 	"geek_homework/tinybook/internal/repository"
+	"github.com/cockroachdb/errors"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"log/slog"
@@ -16,7 +17,7 @@ var (
 
 type UserService interface {
 	Signup(ctx *gin.Context, user domain.User) error
-	Login(ctx *gin.Context, email string, password string) (domain.User, error)
+	Login(ctx context.Context, email string, password string) (domain.User, error)
 	Edit(ctx *gin.Context, user domain.User) error
 	Profile(ctx *gin.Context, userId int64) (domain.User, error)
 	LoginOrSignup(ctx *gin.Context, phone string) (domain.User, error)
@@ -55,7 +56,7 @@ func (userService *userService) Signup(ctx *gin.Context, user domain.User) error
 }
 
 // Login 登录
-func (userService *userService) Login(ctx *gin.Context, email string, password string) (domain.User, error) {
+func (userService *userService) Login(ctx context.Context, email string, password string) (domain.User, error) {
 	byEmail, err := userService.userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		return domain.User{}, err

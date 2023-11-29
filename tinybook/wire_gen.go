@@ -11,7 +11,6 @@ import (
 	"geek_homework/tinybook/internal/repository/cache"
 	"geek_homework/tinybook/internal/repository/dao"
 	"geek_homework/tinybook/internal/service"
-	"geek_homework/tinybook/internal/service/sms/localsms"
 	"geek_homework/tinybook/internal/web"
 	"geek_homework/tinybook/ioc"
 	"github.com/gin-gonic/gin"
@@ -30,7 +29,9 @@ func InitWebServer() *gin.Engine {
 	theineCache := ioc.InitLocalCache()
 	codeCache := cache.NewLocalCodeCache(theineCache)
 	codeRepository := repository.NewCachedCodeRepository(codeCache)
-	smsService := localsms.NewService()
+	smsdao := dao.NewGormSMSDAO(db)
+	smsRepository := repository.NewGormSMSRepository(smsdao)
+	smsService := ioc.InitSMSService(cmdable, smsRepository)
 	codeService := service.NewCodeService(codeRepository, smsService)
 	userHandler := web.NewUserHandler(userService, codeService)
 	engine := ioc.InitWebServer(v, userHandler)

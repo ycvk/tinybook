@@ -10,6 +10,8 @@ import (
 	"math/rand"
 )
 
+var DuplicatePhoneError = repository.DuplicatePhoneError
+
 type CodeService interface {
 	Send(ctx context.Context, biz, phone, timeInterval string) error
 	Verify(ctx context.Context, biz, phone, code string) (bool, error)
