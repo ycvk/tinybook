@@ -145,6 +145,10 @@ func (h *ArticleHandler) Detail(context *gin.Context) {
 			Code: 401,
 			Msg:  "无权限",
 		})
+		if err != nil {
+			h.l.Error("获取文章详情失败, 文章ID: "+strconv.FormatInt(id, 10), zap.Error(err))
+		}
+		return
 	}
 	if err != nil {
 		context.JSON(http.StatusOK, Result{
@@ -215,10 +219,10 @@ func (h *ArticleHandler) PubDetail(context *gin.Context) {
 
 func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 	group := engine.Group("/articles")
-	group.POST("/edit", h.Edit)               // 编辑文章
-	group.POST("/publish", h.Publish)         // 发表文章
-	group.POST("/withdraw", h.Withdraw)       // 撤回文章
-	group.POST("/list", h.List)               // 文章列表
-	group.GET("/detail/:id", h.Detail)        // 文章详情
-	group.GET("/pub/detail/:id", h.PubDetail) // 读者查看文章详情
+	group.POST("/edit", h.Edit)         // 编辑文章
+	group.POST("/publish", h.Publish)   // 发表文章
+	group.POST("/withdraw", h.Withdraw) // 撤回文章
+	group.POST("/list", h.List)         // 文章列表
+	group.GET("/detail/:id", h.Detail)  // 文章详情
+	group.GET("/pub/:id", h.PubDetail)  // 读者查看文章详情
 }

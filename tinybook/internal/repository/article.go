@@ -135,7 +135,7 @@ func (c *CachedArticleRepository) DelCache(ctx context.Context, key int64, artic
 
 func (c *CachedArticleRepository) GetArticleById(ctx context.Context, id int64) (domain.Article, error) {
 	cacheRes, err := c.GetCache(ctx, id, ArticleAuthor)
-	if err == nil {
+	if err == nil && cacheRes.ID != 0 {
 		return cacheRes, nil
 	}
 	article, err := c.dao.GetArticleById(ctx, id)
@@ -197,7 +197,7 @@ func (c *CachedArticleRepository) GetArticlesByAuthor(ctx context.Context, uid i
 		if err == nil {
 			return firstPage, nil
 		}
-		c.log.Error("get first page from cache failed", zap.Error(err))
+		c.log.Warn("get first page from cache failed", zap.Error(err))
 	}
 	articles, err := c.dao.GetArticlesByAuthor(ctx, uid, limit, offset)
 	if err != nil {
@@ -274,7 +274,7 @@ func (c *CachedArticleRepository) Update(ctx context.Context, article domain.Art
 	err := c.dao.UpdateById(ctx, c.domainToDao(article))
 	delErr := c.DelFirstPage(ctx, article.Author.ID)
 	if delErr != nil {
-		c.log.Error("delete first page from cache failed", zap.Error(delErr))
+		c.log.Warn("delete first page from cache failed", zap.Error(delErr))
 	}
 	return err
 }
@@ -283,7 +283,7 @@ func (c *CachedArticleRepository) Create(ctx context.Context, article domain.Art
 	insert, err := c.dao.Insert(ctx, c.domainToDao(article))
 	delErr := c.DelFirstPage(ctx, article.Author.ID)
 	if delErr != nil {
-		c.log.Error("delete first page from cache failed", zap.Error(delErr))
+		c.log.Warn("delete first page from cache failed", zap.Error(delErr))
 	}
 	return insert, err
 }

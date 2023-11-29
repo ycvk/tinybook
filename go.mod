@@ -19,6 +19,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/uuid v1.3.1
 	github.com/google/wire v0.5.0
+	github.com/huaweicloud/huaweicloud-sdk-go-obs v3.23.9+incompatible
 	github.com/lithammer/shortuuid/v4 v4.0.0
 	github.com/pingcap/errors v0.11.4
 	github.com/qiniu/qmgo v1.1.8
