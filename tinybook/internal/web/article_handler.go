@@ -11,12 +11,19 @@ import (
 )
 
 type ArticleHandler struct {
-	service service.ArticleService
-	l       *zap.Logger
+	articleService     service.ArticleService
+	interactiveService service.InteractiveService
+	l                  *zap.Logger
+	biz                string
 }
 
-func NewArticleHandler(service service.ArticleService, l *zap.Logger) *ArticleHandler {
-	return &ArticleHandler{service: service, l: l}
+func NewArticleHandler(artService service.ArticleService, interService service.InteractiveService, l *zap.Logger) *ArticleHandler {
+	return &ArticleHandler{
+		articleService:     artService,
+		interactiveService: interService,
+		l:                  l,
+		biz:                "article",
+	}
 }
 
 func (h *ArticleHandler) Edit(ctx *gin.Context) {
@@ -34,7 +41,7 @@ func (h *ArticleHandler) Edit(ctx *gin.Context) {
 		return
 	}
 	claims := (ctx.MustGet("userClaims")).(jwt.UserClaims)
-	id, err := h.service.Save(ctx, domain.Article{
+	id, err := h.articleService.Save(ctx, domain.Article{
 		ID:      req.Id,
 		Title:   req.Title,
 		Content: req.Content,
@@ -70,7 +77,7 @@ func (h *ArticleHandler) Publish(ctx *gin.Context) {
 		return
 	}
 	claims := (ctx.MustGet("userClaims")).(jwt.UserClaims)
-	id, err := h.service.Publish(ctx, domain.Article{
+	id, err := h.articleService.Publish(ctx, domain.Article{
 		ID:      req.Id,
 		Title:   req.Title,
 		Content: req.Content,
@@ -104,7 +111,7 @@ func (h *ArticleHandler) Withdraw(ctx *gin.Context) {
 		return
 	}
 	claims := (ctx.MustGet("userClaims")).(jwt.UserClaims)
-	err := h.service.Withdraw(ctx, domain.Article{
+	err := h.articleService.Withdraw(ctx, domain.Article{
 		ID: req.Id,
 		Author: domain.Author{
 			ID: claims.Uid,
@@ -139,7 +146,7 @@ func (h *ArticleHandler) Detail(context *gin.Context) {
 		return
 	}
 	claims := (context.MustGet("userClaims")).(jwt.UserClaims)
-	article, err := h.service.GetArticleById(context, id)
+	article, err := h.articleService.GetArticleById(context, id)
 	if strconv.FormatInt(claims.Uid, 10) != article.Author {
 		context.JSON(http.StatusOK, Result{
 			Code: 401,
@@ -175,7 +182,7 @@ func (h *ArticleHandler) List(context *gin.Context) {
 		return
 	}
 	claims := (context.MustGet("userClaims")).(jwt.UserClaims)
-	articles, err := h.service.GetArticlesByAuthor(context, claims.Uid, page.Limit, page.Offset)
+	articles, err := h.articleService.GetArticlesByAuthor(context, claims.Uid, page.Limit, page.Offset)
 	if err != nil {
 		context.JSON(http.StatusOK, Result{
 			Code: 500,
@@ -201,7 +208,7 @@ func (h *ArticleHandler) PubDetail(context *gin.Context) {
 		})
 		return
 	}
-	article, err := h.service.GetPubArticleById(context, id)
+	article, err := h.articleService.GetPubArticleById(context, id)
 	if err != nil {
 		context.JSON(http.StatusOK, Result{
 			Code: 500,
@@ -210,6 +217,13 @@ func (h *ArticleHandler) PubDetail(context *gin.Context) {
 		h.l.Error("读者获取文章详情失败, 文章ID: "+strconv.FormatInt(id, 10), zap.Error(err))
 		return
 	}
+	// 增加阅读数
+	go func() {
+		err = h.interactiveService.IncreaseReadCount(context, h.biz, id)
+		if err != nil {
+			h.l.Warn("文章阅读数增加失败, 文章ID: "+strconv.FormatInt(id, 10), zap.Error(err))
+		}
+	}()
 	context.JSON(http.StatusOK, Result{
 		Code: 200,
 		Msg:  "获取成功",

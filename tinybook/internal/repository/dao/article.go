@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/cockroachdb/errors"
 	"github.com/godruoyi/go-snowflake"
+	"github.com/here-Leslie-Lau/mongo-plus/mongo"
 	"github.com/qiniu/qmgo"
 	"go.mongodb.org/mongo-driver/bson"
 	"gorm.io/gorm"
@@ -32,6 +33,10 @@ type Article struct {
 }
 
 type PublishedArticle Article
+
+func (p *PublishedArticle) Collection() string {
+	return "published_articles"
+}
 
 type GormArticleDAO struct {
 	db *gorm.DB
@@ -154,6 +159,7 @@ type MongoDBArticleDAO struct {
 	db            *qmgo.Database
 	coll          *qmgo.Collection
 	publishedColl *qmgo.Collection
+	dbV2          *mongo.Conn
 }
 
 func (m *MongoDBArticleDAO) GetPubArticleById(ctx context.Context, id int64) (PublishedArticle, error) {
@@ -168,11 +174,12 @@ func (m *MongoDBArticleDAO) GetArticleById(ctx context.Context, id int64) (Artic
 	return article, err
 }
 
-func NewMongoDBArticleDAO(db *qmgo.Database) ArticleDAO {
+func NewMongoDBArticleDAO(db *qmgo.Database, dbv2 *mongo.Conn) ArticleDAO {
 	return &MongoDBArticleDAO{
 		db:            db,
 		coll:          db.Collection("articles"),
 		publishedColl: db.Collection("published_articles"),
+		dbV2:          dbv2,
 	}
 }
 
@@ -219,15 +226,26 @@ func (m *MongoDBArticleDAO) Sync(ctx context.Context, dao Article) (int64, error
 		return dao.ID, err
 	}
 	// 更新发布文章
-	_, err = m.publishedColl.Upsert(ctx, bson.M{"id": dao.ID, "author_id": dao.AuthorId},
-		bson.M{
-			"id":        dao.ID, // 保证id不变
-			"title":     article.Title,
-			"content":   article.Content,
-			"status":    article.Status,
-			"author_id": article.AuthorId,
-			"utime":     now,
-		})
+	//_, err = m.publishedColl.Upsert(ctx, bson.M{"id": dao.ID, "author_id": dao.AuthorId},
+	//	bson.M{
+	//		"id":        dao.ID, // 保证id不变
+	//		"title":     article.Title,
+	//		"content":   article.Content,
+	//		"status":    article.Status,
+	//		"author_id": article.AuthorId,
+	//		"utime":     now,
+	//	})
+	collection := m.dbV2.Collection(&PublishedArticle{})
+	err = collection.Where("id", dao.ID).UpsertOne(map[string]any{
+		"title":     article.Title,
+		"content":   article.Content,
+		"status":    article.Status,
+		"author_id": article.AuthorId,
+		"utime":     now,
+	}, map[string]any{
+		"id":    dao.ID,
+		"ctime": now,
+	})
 	return dao.ID, err
 }
 

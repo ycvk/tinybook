@@ -3,6 +3,7 @@ package ioc
 import (
 	"context"
 	"github.com/cockroachdb/errors"
+	"github.com/here-Leslie-Lau/mongo-plus/mongo"
 	"github.com/qiniu/qmgo"
 	"github.com/qiniu/qmgo/options"
 	"github.com/spf13/viper"
@@ -148,4 +149,36 @@ func createIndex(db *qmgo.Database) error {
 		return err
 	}
 	return nil
+}
+
+func InitMongoDBV2() *mongo.Conn {
+	type Config struct {
+		Ip         string `yaml:"ip"`
+		Port       string `yaml:"port"`
+		UserName   string `yaml:"username"`
+		Password   string `yaml:"password"`
+		DBName     string `yaml:"dbname"`
+		AuthSource string `yaml:"authSource"`
+	}
+	var cfg Config
+	viperErr := viper.UnmarshalKey("mongodb", &cfg)
+	if viperErr != nil {
+		panic(viperErr)
+	}
+
+	opts := []mongo.Option{
+		// Database to Connect
+		mongo.WithDatabase(cfg.DBName),
+		// Maximum Connection Pool Size
+		mongo.WithMaxPoolSize(10),
+		// Username
+		mongo.WithUsername(cfg.UserName),
+		// Password
+		mongo.WithPassword(cfg.Password),
+		// Connection URL
+		mongo.WithAddr(cfg.Ip + ":" + cfg.Port),
+	}
+	conn, _ := mongo.NewConn(opts...)
+	//defer f()
+	return conn
 }
