@@ -29,10 +29,22 @@ type LikeRecord struct {
 	Ctime  int64  `gorm:"column:ctime;not null"`
 }
 
+type CollectRecord struct {
+	Id int64 `gorm:"column:id;primaryKey;autoIncrement;not null"`
+	// 收藏夹ID 普通索引 区别于其他3个联合索引 这样保证一篇文章只能收藏到一个收藏夹 但是一个收藏夹可以收藏多篇文章
+	Cid   int64  `gorm:"column:cid;not null;index"`
+	Uid   int64  `gorm:"column:uid;not null;uniqueIndex:idx_biz_collect_id"`
+	BizId int64  `gorm:"column:biz_id;not null;uniqueIndex:idx_biz_collect_id"`
+	Biz   string `gorm:"column:biz;not null;type:varchar(32);uniqueIndex:idx_biz_collect_id"`
+	Utime int64  `gorm:"column:utime;not null"`
+	Ctime int64  `gorm:"column:ctime;not null"`
+}
+
 type InteractiveDAO interface {
 	IncreaseReadCount(ctx context.Context, biz string, bizId int64) error
 	InsertLikeRecord(ctx context.Context, biz string, id int64, uid int64) error
 	DeleteLikeRecord(ctx context.Context, biz string, id int64, uid int64) error
+	InsertCollectRecord(ctx context.Context, biz string, id int64, cid int64, uid int64) error
 }
 
 type GormInteractiveDAO struct {
@@ -41,6 +53,35 @@ type GormInteractiveDAO struct {
 
 func NewGormInteractiveDAO(db *gorm.DB) InteractiveDAO {
 	return &GormInteractiveDAO{db: db}
+}
+
+func (g *GormInteractiveDAO) InsertCollectRecord(ctx context.Context, biz string, id int64, cid int64, uid int64) error {
+	now := time.Now().Unix()
+	return g.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		err := tx.Create(&CollectRecord{
+			Cid:   cid,
+			Uid:   uid,
+			BizId: id,
+			Biz:   biz,
+			Utime: now,
+			Ctime: now,
+		}).Error
+		if err != nil {
+			return err
+		}
+		return tx.WithContext(ctx).Clauses(clause.OnConflict{
+			DoUpdates: clause.Assignments(map[string]any{
+				"collect_count": gorm.Expr("collect_count + ?", 1),
+				"utime":         now,
+			}),
+		}).Create(&Interactive{
+			BizId:        id,
+			Biz:          biz,
+			CollectCount: 1,
+			Utime:        now,
+			Ctime:        now,
+		}).Error
+	})
 }
 
 func (g *GormInteractiveDAO) InsertLikeRecord(ctx context.Context, biz string, id int64, uid int64) error {

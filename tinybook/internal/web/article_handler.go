@@ -271,6 +271,35 @@ func (h *ArticleHandler) Like(context *gin.Context) {
 	})
 }
 
+func (h *ArticleHandler) Collect(ctx *gin.Context) {
+	type Req struct {
+		Id  int64 `json:"id"`
+		Cid int64 `json:"cid"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 400,
+			Msg:  "参数错误",
+		})
+		return
+	}
+	claims := (ctx.MustGet("userClaims")).(jwt.UserClaims)
+	err := h.interactiveService.Collect(ctx, h.biz, req.Id, req.Cid, claims.Uid)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 500,
+			Msg:  "服务器错误",
+		})
+		h.l.Error("收藏失败, 文章ID: "+strconv.FormatInt(req.Id, 10)+" 用户ID: "+strconv.FormatInt(claims.Uid, 10), zap.Error(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Code: 200,
+		Msg:  "收藏成功",
+	})
+}
+
 func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 	group := engine.Group("/articles")
 	group.POST("/edit", h.Edit)         // 编辑文章
@@ -280,4 +309,5 @@ func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 	group.GET("/detail/:id", h.Detail)  // 文章详情
 	group.GET("/pub/:id", h.PubDetail)  // 读者查看文章详情
 	group.POST("/like", h.Like)         // 点赞
+	group.POST("/collect", h.Collect)   // 收藏
 }
