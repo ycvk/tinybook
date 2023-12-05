@@ -21,6 +21,9 @@ type ArticleVo struct {
 	Status     string `json:"status,omitempty"`
 	Ctime      string `json:"ctime,omitempty"`
 	Utime      string `json:"utime,omitempty"`
+
+	// 以下字段用于前端展示
+	Interactive
 }
 
 type Author struct {

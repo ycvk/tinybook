@@ -13,6 +13,7 @@ func CreateTable(db *gorm.DB) {
 		&dao.PublishedArticle{},
 		&dao.Interactive{},
 		&dao.LikeRecord{},
+		&dao.CollectRecord{},
 	)
 	if err != nil {
 		panic(err)

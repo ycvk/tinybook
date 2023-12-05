@@ -45,6 +45,9 @@ type InteractiveDAO interface {
 	InsertLikeRecord(ctx context.Context, biz string, id int64, uid int64) error
 	DeleteLikeRecord(ctx context.Context, biz string, id int64, uid int64) error
 	InsertCollectRecord(ctx context.Context, biz string, id int64, cid int64, uid int64) error
+	GetInteractive(ctx context.Context, biz string, id int64) (Interactive, error)
+	IsLiked(ctx context.Context, biz string, id int64, uid int64) (bool, error)
+	IsCollected(ctx context.Context, biz string, id int64, uid int64) (bool, error)
 }
 
 type GormInteractiveDAO struct {
@@ -53,6 +56,28 @@ type GormInteractiveDAO struct {
 
 func NewGormInteractiveDAO(db *gorm.DB) InteractiveDAO {
 	return &GormInteractiveDAO{db: db}
+}
+
+func (g *GormInteractiveDAO) IsCollected(ctx context.Context, biz string, id int64, uid int64) (bool, error) {
+	var count int64
+	err := g.db.WithContext(ctx).Model(&CollectRecord{}).
+		Where("uid = ? and biz_id = ? and biz = ?", uid, id, biz).
+		Count(&count).Error
+	return count > 0, err
+}
+
+func (g *GormInteractiveDAO) IsLiked(ctx context.Context, biz string, id int64, uid int64) (bool, error) {
+	var count int64
+	err := g.db.WithContext(ctx).Model(&LikeRecord{}).
+		Where("uid = ? and biz_id = ? and biz = ? and status = ?", uid, id, biz, 1).
+		Count(&count).Error
+	return count > 0, err
+}
+
+func (g *GormInteractiveDAO) GetInteractive(ctx context.Context, biz string, id int64) (Interactive, error) {
+	var interactive Interactive
+	err := g.db.WithContext(ctx).First(&interactive, "biz_id = ? and biz = ?", id, biz).Error
+	return interactive, err
 }
 
 func (g *GormInteractiveDAO) InsertCollectRecord(ctx context.Context, biz string, id int64, cid int64, uid int64) error {

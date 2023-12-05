@@ -6,6 +6,7 @@ import (
 	"geek_homework/tinybook/internal/web/jwt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 	"net/http"
 	"strconv"
 )
@@ -208,7 +209,27 @@ func (h *ArticleHandler) PubDetail(context *gin.Context) {
 		})
 		return
 	}
-	article, err := h.articleService.GetPubArticleById(context, id)
+
+	var (
+		eg          errgroup.Group
+		article     domain.ArticleVo
+		interactive domain.Interactive
+	)
+
+	eg.Go(func() error {
+		var articleErr error
+		article, articleErr = h.articleService.GetPubArticleById(context, id)
+		return articleErr
+	})
+
+	eg.Go(func() error {
+		var interactiveErr error
+		claims := (context.MustGet("userClaims")).(jwt.UserClaims)
+		interactive, interactiveErr = h.interactiveService.GetInteractive(context, h.biz, id, claims.Uid)
+		return interactiveErr
+	})
+
+	err = eg.Wait()
 	if err != nil {
 		context.JSON(http.StatusOK, Result{
 			Code: 500,
@@ -224,6 +245,7 @@ func (h *ArticleHandler) PubDetail(context *gin.Context) {
 			h.l.Warn("文章阅读数增加失败, 文章ID: "+strconv.FormatInt(id, 10), zap.Error(err))
 		}
 	}()
+	article.Interactive = interactive
 	context.JSON(http.StatusOK, Result{
 		Code: 200,
 		Msg:  "获取成功",

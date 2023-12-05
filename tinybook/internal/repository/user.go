@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ErrUserNotFound = dao.ErrUserNotFound
+	ErrUserNotFound = dao.ErrNotFound
 	ErrorUserExist  = dao.ErrUserDuplicate
 )
 

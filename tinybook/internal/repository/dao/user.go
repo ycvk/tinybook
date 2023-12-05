@@ -11,7 +11,7 @@ import (
 
 var (
 	duplicateEmailError = errors.New("邮箱已存在")
-	ErrUserNotFound     = gorm.ErrRecordNotFound.Error()
+	ErrNotFound         = gorm.ErrRecordNotFound.Error()
 	ErrUserDuplicate    = gorm.ErrDuplicatedKey.Error()
 )
 

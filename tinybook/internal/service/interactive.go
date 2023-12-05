@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"geek_homework/tinybook/internal/domain"
 	"geek_homework/tinybook/internal/repository"
+	"golang.org/x/sync/errgroup"
 )
 
 type InteractiveService interface {
@@ -10,10 +12,30 @@ type InteractiveService interface {
 	Like(ctx context.Context, biz string, id int64, uid int64) error
 	Unlike(ctx context.Context, biz string, id int64, uid int64) error
 	Collect(ctx context.Context, biz string, id int64, cid int64, uid int64) error
+	GetInteractive(ctx context.Context, biz string, id int64, uid int64) (domain.Interactive, error)
 }
 
 type interactiveService struct {
 	repo repository.InteractiveRepository
+}
+
+func (i *interactiveService) GetInteractive(ctx context.Context, biz string, id int64, uid int64) (domain.Interactive, error) {
+	interactive, err := i.repo.GetInteractive(ctx, biz, id)
+	if err != nil {
+		return domain.Interactive{}, err
+	}
+	var eg errgroup.Group
+	eg.Go(func() error {
+		var er error
+		interactive.Liked, er = i.repo.Liked(ctx, biz, id, uid)
+		return er
+	})
+	eg.Go(func() error {
+		var er error
+		interactive.Collected, er = i.repo.Collected(ctx, biz, id, uid)
+		return er
+	})
+	return interactive, eg.Wait()
 }
 
 func (i *interactiveService) Collect(ctx context.Context, biz string, id int64, cid int64, uid int64) error {
