@@ -231,6 +231,46 @@ func (h *ArticleHandler) PubDetail(context *gin.Context) {
 	})
 }
 
+func (h *ArticleHandler) Like(context *gin.Context) {
+	type Req struct {
+		Id   int64 `json:"id"`
+		Like bool  `json:"like"`
+	}
+	var req Req
+	if err := context.Bind(&req); err != nil {
+		context.JSON(http.StatusOK, Result{
+			Code: 400,
+			Msg:  "参数错误",
+		})
+		return
+	}
+	claims := (context.MustGet("userClaims")).(jwt.UserClaims)
+	var err error
+	if req.Like {
+		err = h.interactiveService.Like(context, h.biz, req.Id, claims.Uid)
+	} else {
+		err = h.interactiveService.Unlike(context, h.biz, req.Id, claims.Uid)
+	}
+	if err != nil {
+		context.JSON(http.StatusOK, Result{
+			Code: 500,
+			Msg:  "服务器错误",
+		})
+		h.l.Error("点赞失败, 文章ID: "+strconv.FormatInt(req.Id, 10)+" 用户ID: "+strconv.FormatInt(claims.Uid, 10), zap.Error(err))
+		return
+	}
+	var msg string
+	if req.Like {
+		msg = "点赞成功"
+	} else {
+		msg = "取消点赞成功"
+	}
+	context.JSON(http.StatusOK, Result{
+		Code: 200,
+		Msg:  msg,
+	})
+}
+
 func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 	group := engine.Group("/articles")
 	group.POST("/edit", h.Edit)         // 编辑文章
@@ -239,4 +279,5 @@ func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 	group.POST("/list", h.List)         // 文章列表
 	group.GET("/detail/:id", h.Detail)  // 文章详情
 	group.GET("/pub/:id", h.PubDetail)  // 读者查看文章详情
+	group.POST("/like", h.Like)         // 点赞
 }

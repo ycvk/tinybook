@@ -6,14 +6,29 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const ReadCountKey = "read_count"
+const (
+	ReadCountKey = "read_count"
+	LikeCountKey = "like_count"
+)
 
 type InteractiveCache interface {
 	IncreaseReadCountIfPresent(ctx context.Context, biz string, bizId int64) error
+	IncreaseLikeCountIfPresent(ctx context.Context, biz string, id int64, uid int64) error
+	DecreaseLikeCountIfPresent(ctx context.Context, biz string, id int64, uid int64) error
 }
 
 type RedisInteractiveCache struct {
 	cli redis.Cmdable
+}
+
+func (r *RedisInteractiveCache) IncreaseLikeCountIfPresent(ctx context.Context, biz string, id int64, uid int64) error {
+	key := fmt.Sprintf("%s:%s:%d", biz, LikeCountKey, id)
+	return r.cli.SAdd(ctx, key, uid).Err()
+}
+
+func (r *RedisInteractiveCache) DecreaseLikeCountIfPresent(ctx context.Context, biz string, id int64, uid int64) error {
+	key := fmt.Sprintf("%s:%s:%d", biz, LikeCountKey, id)
+	return r.cli.SRem(ctx, key, uid).Err()
 }
 
 func NewRedisInteractiveCache(cli redis.Cmdable) InteractiveCache {

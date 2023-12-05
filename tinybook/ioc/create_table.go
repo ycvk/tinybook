@@ -6,7 +6,14 @@ import (
 )
 
 func CreateTable(db *gorm.DB) {
-	err := db.AutoMigrate(&dao.User{}, &dao.SMS{}, &dao.Article{}, &dao.PublishedArticle{}, &dao.Interactive{})
+	err := db.AutoMigrate(
+		&dao.User{},
+		&dao.SMS{},
+		&dao.Article{},
+		&dao.PublishedArticle{},
+		&dao.Interactive{},
+		&dao.LikeRecord{},
+	)
 	if err != nil {
 		panic(err)
 	}

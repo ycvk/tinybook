@@ -8,6 +8,8 @@ import (
 
 type InteractiveRepository interface {
 	IncreaseReadCount(ctx context.Context, biz string, bizId int64) error
+	IncreaseLikeCount(ctx context.Context, biz string, id int64, uid int64) error
+	DecreaseLikeCount(ctx context.Context, biz string, id int64, uid int64) error
 }
 
 type CachedInteractiveRepository struct {
@@ -17,6 +19,22 @@ type CachedInteractiveRepository struct {
 
 func NewCachedInteractiveRepository(dao dao.InteractiveDAO, cache cache.InteractiveCache) InteractiveRepository {
 	return &CachedInteractiveRepository{dao: dao, cache: cache}
+}
+
+func (c *CachedInteractiveRepository) IncreaseLikeCount(ctx context.Context, biz string, id int64, uid int64) error {
+	err := c.dao.InsertLikeRecord(ctx, biz, id, uid)
+	if err != nil {
+		return err
+	}
+	return c.cache.IncreaseLikeCountIfPresent(ctx, biz, id, uid)
+}
+
+func (c *CachedInteractiveRepository) DecreaseLikeCount(ctx context.Context, biz string, id int64, uid int64) error {
+	err := c.dao.DeleteLikeRecord(ctx, biz, id, uid)
+	if err != nil {
+		return err
+	}
+	return c.cache.DecreaseLikeCountIfPresent(ctx, biz, id, uid)
 }
 
 func (c *CachedInteractiveRepository) IncreaseReadCount(ctx context.Context, biz string, bizId int64) error {
