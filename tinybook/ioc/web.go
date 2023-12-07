@@ -1,7 +1,6 @@
 package ioc
 
 import (
-	"geek_homework/tinybook/internal/events"
 	"geek_homework/tinybook/internal/web"
 	"geek_homework/tinybook/internal/web/jwt"
 	"geek_homework/tinybook/internal/web/middleware"
@@ -19,7 +18,7 @@ import (
 )
 
 func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler,
-	wechatHandler *web.OAuth2WechatHandler, articleHandler *web.ArticleHandler, consumers []events.Consumer) *gin.Engine {
+	wechatHandler *web.OAuth2WechatHandler, articleHandler *web.ArticleHandler) *gin.Engine {
 	engine := gin.Default()
 	// 注册中间件
 	engine.Use(handlerFunc...)
@@ -29,10 +28,6 @@ func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler,
 	articleHandler.RegisterRoutes(engine)
 	// 注册wechat oauth2路由
 	wechatHandler.RegisterRoutes(engine)
-	// 注册kafka消费者
-	for _, consumer := range consumers {
-		consumer.Start()
-	}
 	return engine
 }
 

@@ -19,12 +19,14 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/uuid v1.3.1
 	github.com/google/wire v0.5.0
+	github.com/here-Leslie-Lau/mongo-plus v1.0.2
 	github.com/huaweicloud/huaweicloud-sdk-go-obs v3.23.9+incompatible
 	github.com/lithammer/shortuuid/v4 v4.0.0
 	github.com/pingcap/errors v0.11.4
 	github.com/qiniu/qmgo v1.1.8
 	github.com/redis/go-redis/v9 v9.2.1
 	github.com/samber/lo v1.38.1
+	github.com/segmentio/kafka-go v0.4.46
 	github.com/spf13/viper v1.17.0
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms v1.0.770
 	github.com/wasilibs/go-re2 v1.4.0
@@ -34,6 +36,7 @@ require (
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.14.0
 	golang.org/x/net v0.17.0
+	golang.org/x/sync v0.4.0
 	gorm.io/datatypes v1.2.0
 	gorm.io/driver/mysql v1.5.2
 	gorm.io/gorm v1.25.5
@@ -100,7 +103,6 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
-	github.com/here-Leslie-Lau/mongo-plus v1.0.2 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect
@@ -170,7 +172,6 @@ require (
 	golang.org/x/arch v0.5.0 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/oauth2 v0.12.0 // indirect
-	golang.org/x/sync v0.4.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/term v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect

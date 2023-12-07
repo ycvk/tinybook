@@ -11,11 +11,10 @@ import (
 	"geek_homework/tinybook/internal/web"
 	"geek_homework/tinybook/internal/web/jwt"
 	"geek_homework/tinybook/ioc"
-	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 )
 
-func InitWebServer() *gin.Engine {
+func InitWebServer() *App {
 
 	wire.Build(
 		// 初始化redis, db, localCache, mongoDB
@@ -40,7 +39,9 @@ func InitWebServer() *gin.Engine {
 		// 初始化kafka
 		ioc.InitWriter, article.NewKafkaAsyncProducer,
 		article.NewKafkaConsumer, article.CollectConsumer,
+
+		wire.Struct(new(App), "*"),
 	)
 
-	return gin.Default()
+	return &App{}
 }

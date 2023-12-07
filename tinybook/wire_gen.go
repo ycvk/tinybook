@@ -15,7 +15,6 @@ import (
 	"geek_homework/tinybook/internal/web"
 	"geek_homework/tinybook/internal/web/jwt"
 	"geek_homework/tinybook/ioc"
-	"github.com/gin-gonic/gin"
 )
 
 import (
@@ -24,7 +23,7 @@ import (
 
 // Injectors from wire.go:
 
-func InitWebServer() *gin.Engine {
+func InitWebServer() *App {
 	cmdable := ioc.InitRedis()
 	handler := jwt.NewRedisJWTHandler(cmdable)
 	logger := ioc.InitLogger()
@@ -57,8 +56,12 @@ func InitWebServer() *gin.Engine {
 	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
 	interactiveService := service.NewInteractiveService(interactiveRepository)
 	articleHandler := web.NewArticleHandler(articleService, interactiveService, logger)
+	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler)
 	kafkaConsumer := article.NewKafkaConsumer(interactiveRepository, logger)
 	v2 := article.CollectConsumer(kafkaConsumer)
-	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler, v2)
-	return engine
+	app := &App{
+		server:    engine,
+		consumers: v2,
+	}
+	return app
 }
