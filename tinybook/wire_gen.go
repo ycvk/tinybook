@@ -7,6 +7,7 @@
 package main
 
 import (
+	"geek_homework/tinybook/internal/events/article"
 	"geek_homework/tinybook/internal/repository"
 	"geek_homework/tinybook/internal/repository/cache"
 	"geek_homework/tinybook/internal/repository/dao"
@@ -48,12 +49,16 @@ func InitWebServer() *gin.Engine {
 	articleDAO := dao.NewMongoDBArticleDAO(database, conn)
 	articleCache := cache.NewRedisArticleCache(cmdable)
 	articleRepository := repository.NewCachedArticleRepository(articleDAO, articleCache, userRepository, logger)
-	articleService := service.NewArticleService(articleRepository)
+	writer := ioc.InitWriter()
+	readEventProducer := article.NewKafkaAsyncProducer(writer)
+	articleService := service.NewArticleService(articleRepository, readEventProducer, logger)
 	interactiveDAO := dao.NewGormInteractiveDAO(db)
 	interactiveCache := cache.NewRedisInteractiveCache(cmdable, logger)
 	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
 	interactiveService := service.NewInteractiveService(interactiveRepository)
 	articleHandler := web.NewArticleHandler(articleService, interactiveService, logger)
-	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler)
+	kafkaConsumer := article.NewKafkaConsumer(interactiveRepository, logger)
+	v2 := article.CollectConsumer(kafkaConsumer)
+	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler, v2)
 	return engine
 }

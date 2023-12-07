@@ -1,7 +1,7 @@
 db:
   dsn: "root:root@tcp(127.0.0.1:3308)/tinybook?charset=utf8mb4&parseTime=True&loc=Local"
 redis:
-  addr: "localhost:6379"
+  addr: "localhost:30001"
 mongodb:
   ip: "localhost"
   port: "30003"
@@ -9,3 +9,5 @@ mongodb:
   password: "123456"
   dbname: "tinybook"
   authSource: "admin"
+kafka:
+  brokers: "localhost:9092"

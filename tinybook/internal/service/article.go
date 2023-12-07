@@ -3,8 +3,10 @@ package service
 import (
 	"context"
 	"geek_homework/tinybook/internal/domain"
+	"geek_homework/tinybook/internal/events/article"
 	"geek_homework/tinybook/internal/repository"
 	"github.com/samber/lo"
+	"go.uber.org/zap"
 	"strconv"
 	"time"
 )
@@ -15,43 +17,57 @@ type ArticleService interface {
 	Withdraw(ctx context.Context, article domain.Article) error
 	GetArticlesByAuthor(ctx context.Context, uid int64, limit int, offset int) ([]domain.ArticleVo, error)
 	GetArticleById(ctx context.Context, id int64) (domain.ArticleVo, error)
-	GetPubArticleById(ctx context.Context, id int64) (domain.ArticleVo, error)
+	GetPubArticleById(ctx context.Context, id int64, uid int64) (domain.ArticleVo, error)
 }
 
 type articleService struct {
-	repo repository.ArticleRepository
+	repo     repository.ArticleRepository
+	producer article.ReadEventProducer
+	log      *zap.Logger
 }
 
-func (a *articleService) GetPubArticleById(ctx context.Context, id int64) (domain.ArticleVo, error) {
-	article, err := a.repo.GetPubArticleById(ctx, id)
+func (a *articleService) GetPubArticleById(ctx context.Context, id int64, uid int64) (domain.ArticleVo, error) {
+	art, err := a.repo.GetPubArticleById(ctx, id)
 	if err != nil {
 		return domain.ArticleVo{}, err
 	}
+	// 异步发送阅读事件
+	go func() {
+		err = a.producer.ProduceReadEvent(article.ReadEvent{
+			ArticleID: id,
+			UserID:    uid,
+		})
+		if err != nil {
+			a.log.Error("produce read event failed, article id: "+
+				strconv.FormatInt(id, 10)+" user id: "+
+				strconv.FormatInt(uid, 10), zap.Error(err))
+		}
+	}()
 	return domain.ArticleVo{
-		ID:         article.ID,
-		Title:      article.Title,
-		Content:    article.Content,
-		Author:     strconv.FormatInt(article.Author.ID, 10),
-		AuthorName: article.Author.Name,
-		Status:     strconv.FormatUint(uint64(article.Status), 10),
-		Ctime:      time.Unix(article.Ctime, 0).Format("2006-01-02 15:04:05"),
-		Utime:      time.Unix(article.Utime, 0).Format("2006-01-02 15:04:05"),
+		ID:         art.ID,
+		Title:      art.Title,
+		Content:    art.Content,
+		Author:     strconv.FormatInt(art.Author.ID, 10),
+		AuthorName: art.Author.Name,
+		Status:     strconv.FormatUint(uint64(art.Status), 10),
+		Ctime:      time.Unix(art.Ctime, 0).Format("2006-01-02 15:04:05"),
+		Utime:      time.Unix(art.Utime, 0).Format("2006-01-02 15:04:05"),
 	}, nil
 }
 
 func (a *articleService) GetArticleById(ctx context.Context, id int64) (domain.ArticleVo, error) {
-	article, err := a.repo.GetArticleById(ctx, id)
+	art, err := a.repo.GetArticleById(ctx, id)
 	if err != nil {
 		return domain.ArticleVo{}, err
 	}
 	return domain.ArticleVo{
-		ID:      article.ID,
-		Title:   article.Title,
-		Content: article.Content,
-		Author:  strconv.FormatInt(article.Author.ID, 10),
-		Status:  strconv.FormatUint(uint64(article.Status), 10),
-		Ctime:   time.Unix(article.Ctime, 0).Format("2006-01-02 15:04:05"),
-		Utime:   time.Unix(article.Utime, 0).Format("2006-01-02 15:04:05"),
+		ID:      art.ID,
+		Title:   art.Title,
+		Content: art.Content,
+		Author:  strconv.FormatInt(art.Author.ID, 10),
+		Status:  strconv.FormatUint(uint64(art.Status), 10),
+		Ctime:   time.Unix(art.Ctime, 0).Format("2006-01-02 15:04:05"),
+		Utime:   time.Unix(art.Utime, 0).Format("2006-01-02 15:04:05"),
 	}, nil
 }
 
@@ -74,8 +90,9 @@ func (a *articleService) GetArticlesByAuthor(ctx context.Context, uid int64, lim
 	}), nil
 }
 
-func NewArticleService(repo repository.ArticleRepository) ArticleService {
-	return &articleService{repo: repo}
+func NewArticleService(repo repository.ArticleRepository, producer article.ReadEventProducer, log *zap.Logger) ArticleService {
+	//logger.With(zap.String("type", "articleService"))
+	return &articleService{repo: repo, producer: producer, log: log}
 }
 
 func (a *articleService) Withdraw(ctx context.Context, article domain.Article) error {

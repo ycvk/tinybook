@@ -3,6 +3,7 @@
 package main
 
 import (
+	"geek_homework/tinybook/internal/events/article"
 	"geek_homework/tinybook/internal/repository"
 	"geek_homework/tinybook/internal/repository/cache"
 	"geek_homework/tinybook/internal/repository/dao"
@@ -36,6 +37,9 @@ func InitWebServer() *gin.Engine {
 		web.NewArticleHandler,
 		// 初始化web 和 中间件
 		ioc.InitWebServer, ioc.InitHandlerFunc, ioc.InitLogger,
+		// 初始化kafka
+		ioc.InitWriter, article.NewKafkaAsyncProducer,
+		article.NewKafkaConsumer, article.CollectConsumer,
 	)
 
 	return gin.Default()

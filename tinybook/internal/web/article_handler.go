@@ -215,10 +215,11 @@ func (h *ArticleHandler) PubDetail(context *gin.Context) {
 		article     domain.ArticleVo
 		interactive domain.Interactive
 	)
+	claims := (context.MustGet("userClaims")).(jwt.UserClaims)
 
 	eg.Go(func() error {
 		var articleErr error
-		article, articleErr = h.articleService.GetPubArticleById(context, id)
+		article, articleErr = h.articleService.GetPubArticleById(context, id, claims.Uid)
 		return articleErr
 	})
 
@@ -238,13 +239,13 @@ func (h *ArticleHandler) PubDetail(context *gin.Context) {
 		h.l.Error("读者获取文章详情失败, 文章ID: "+strconv.FormatInt(id, 10), zap.Error(err))
 		return
 	}
-	// 增加阅读数
-	go func() {
-		err = h.interactiveService.IncreaseReadCount(context, h.biz, id)
-		if err != nil {
-			h.l.Warn("文章阅读数增加失败, 文章ID: "+strconv.FormatInt(id, 10), zap.Error(err))
-		}
-	}()
+	// 增加阅读数 不在这里处理了，放到kafka处理了
+	//go func() {
+	//	err = h.interactiveService.IncreaseReadCount(context, h.biz, id)
+	//	if err != nil {
+	//		h.l.Warn("文章阅读数增加失败, 文章ID: "+strconv.FormatInt(id, 10), zap.Error(err))
+	//	}
+	//}()
 	article.Interactive = interactive
 	context.JSON(http.StatusOK, Result{
 		Code: 200,
