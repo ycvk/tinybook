@@ -17,6 +17,7 @@ const (
 
 type InteractiveCache interface {
 	IncreaseReadCountIfPresent(ctx context.Context, biz string, bizId int64) error
+	BatchIncreaseReadCountIfPresent(ctx context.Context, biz string, ids []int64) error
 	IncreaseLikeCountIfPresent(ctx context.Context, biz string, id int64, uid int64) error
 	DecreaseLikeCountIfPresent(ctx context.Context, biz string, id int64, uid int64) error
 	IncreaseCollectCountIfPresent(ctx context.Context, biz string, id int64, uid int64) error
@@ -32,6 +33,17 @@ type RedisInteractiveCache struct {
 
 func NewRedisInteractiveCache(cli redis.Cmdable, log *zap.Logger) InteractiveCache {
 	return &RedisInteractiveCache{cli: cli, log: log}
+}
+
+func (r *RedisInteractiveCache) BatchIncreaseReadCountIfPresent(ctx context.Context, biz string, ids []int64) error {
+	var eg errgroup.Group
+	for i := range ids {
+		id := ids[i]
+		eg.Go(func() error {
+			return r.IncreaseReadCountIfPresent(ctx, biz, id)
+		})
+	}
+	return eg.Wait()
 }
 
 func (r *RedisInteractiveCache) IsCollected(ctx context.Context, biz string, id int64, uid int64) (bool, error) {

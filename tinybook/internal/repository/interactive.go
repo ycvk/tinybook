@@ -9,6 +9,7 @@ import (
 
 type InteractiveRepository interface {
 	IncreaseReadCount(ctx context.Context, biz string, bizId int64) error
+	BatchIncreaseReadCount(ctx context.Context, biz string, bizIds []int64) error
 	IncreaseLikeCount(ctx context.Context, biz string, id int64, uid int64) error
 	DecreaseLikeCount(ctx context.Context, biz string, id int64, uid int64) error
 	Collect(ctx context.Context, biz string, id int64, cid int64, uid int64) error
@@ -24,6 +25,14 @@ type CachedInteractiveRepository struct {
 
 func NewCachedInteractiveRepository(dao dao.InteractiveDAO, cache cache.InteractiveCache) InteractiveRepository {
 	return &CachedInteractiveRepository{dao: dao, cache: cache}
+}
+
+func (c *CachedInteractiveRepository) BatchIncreaseReadCount(ctx context.Context, biz string, bizIds []int64) error {
+	err := c.dao.BatchIncreaseReadCount(ctx, biz, bizIds)
+	if err != nil {
+		return err
+	}
+	return c.cache.BatchIncreaseReadCountIfPresent(ctx, biz, bizIds)
 }
 
 func (c *CachedInteractiveRepository) Collected(ctx context.Context, biz string, id int64, uid int64) (bool, error) {

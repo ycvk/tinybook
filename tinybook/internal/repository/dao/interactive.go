@@ -42,6 +42,7 @@ type CollectRecord struct {
 
 type InteractiveDAO interface {
 	IncreaseReadCount(ctx context.Context, biz string, bizId int64) error
+	BatchIncreaseReadCount(ctx context.Context, bizs string, ids []int64) error
 	InsertLikeRecord(ctx context.Context, biz string, id int64, uid int64) error
 	DeleteLikeRecord(ctx context.Context, biz string, id int64, uid int64) error
 	InsertCollectRecord(ctx context.Context, biz string, id int64, cid int64, uid int64) error
@@ -56,6 +57,19 @@ type GormInteractiveDAO struct {
 
 func NewGormInteractiveDAO(db *gorm.DB) InteractiveDAO {
 	return &GormInteractiveDAO{db: db}
+}
+
+func (g *GormInteractiveDAO) BatchIncreaseReadCount(ctx context.Context, biz string, ids []int64) error {
+	return g.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		dao := NewGormInteractiveDAO(tx)
+		for i := 0; i < len(ids); i++ {
+			err := dao.IncreaseReadCount(ctx, biz, ids[i])
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func (g *GormInteractiveDAO) IsCollected(ctx context.Context, biz string, id int64, uid int64) (bool, error) {
