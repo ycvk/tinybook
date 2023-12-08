@@ -49,7 +49,19 @@ func (r *RedisInteractiveCache) SetTopNLike(ctx context.Context, biz string, int
 		})
 	}
 	_, err := pipeline.Exec(ctx)
-	return err
+	if err != nil {
+		return err
+	}
+	// 发送点赞排行榜事件 理论上有本地缓存存在，不会走到这里
+	go func() {
+		err2 := r.likeRankEvent.ProduceLikeRankEvent(interactive.LikeRankEvent{
+			Change: true,
+		})
+		if err2 != nil {
+			r.log.Error("produce like rank event failed", zap.Error(err2))
+		}
+	}()
+	return nil
 }
 
 func NewRedisInteractiveCache(cli redis.Cmdable, log *zap.Logger, cache *theine.Cache[string, any], event interactive.LikeRankEventProducer) InteractiveCache {

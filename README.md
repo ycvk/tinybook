@@ -10,6 +10,7 @@ Golang class homework in Geek Space.
 - [Week04: 引入本地缓存](#week04-引入本地缓存)
 - [Week05: 同步转异步的容错机制](#week05-同步转异步的容错机制)
 - [Week06: 优化打印日志的部分](#week06-优化打印日志的部分)
+- [Week07: 找出点赞数量前N的数据](#week07-找出点赞数量前n的数据)
 
 ---
 
@@ -439,7 +440,7 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 
 ---
 
-<h2 id="Week06"> Week06: 优化打印日志的部分</h2>
+<h2 id="Week06">Week06: 优化打印日志的部分</h2>
 
 [GitHub Link](https://github.com/ycvk/geek_homework/blob/week06/tinybook/internal/web/middleware/error.go)
 
@@ -502,3 +503,83 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 - 代码清洁：这使得处理函数更加专注于它们的主要职责，从而使代码更加清晰和易于理解。
 
 ---
+
+<h2 id="Week07">Week07: 找出点赞数量前 N 的数据</h2>
+
+[GitHub Link](https://github.com/ycvk/geek_homework/tree/week07)
+
+### 作业要求
+
+本次的核心是设计一个能够找出按照点赞数量前 N 个数据的高性能方案。方案应考虑以下要点：
+
+1. 综合缓存利用：整合 Redis 和本地缓存的使用，确保方案在面试中具有吸引力和竞争力。
+2. 业务折中：清晰阐述任何业务上的折中和权衡。
+3. 自主设计：独立设计解决方案，遵循自主搜索和讨论的原则。
+
+### 设计思路
+
+- Redis ZSet：使用 Redis 的 ZSet 数据结构来存储和更新文章点赞数。例如，通过命令 `zincrby article:like_count 1 id`
+  更新点赞数，并使用 `ZRevRange` 获取指定排名数据。
+
+
+- 本地缓存与 Kafka 结合：采用 **theine-go** 高性能本地缓存，结合 Kafka 消息队列。
+  在点赞或取消点赞时，发送消息到 Kafka。消费者接收消息后，向本地缓存中设置或更新一个布尔型键值，表示排行榜数据的变化。
+
+
+- 定时器同步机制：设置可调节的定时器，周期性检查本地缓存中的布尔键。如键存在，则表明排行榜数据有变化，触发本地缓存从 Redis
+  拉取最新数据，拉取后重置该键。
+
+### 业务折中
+
+- **Redis ZSet 与本地缓存的折中：** 由于 Redis ZSet 本身就是一个有序集合，可以直接使用 ZSet 来存储排行榜数据。但是，如果每次请求都直接从
+  Redis
+  拉取数据，会导致 Redis 压力过大。因此，可以使用本地缓存来缓存排行榜数据，减轻 Redis 压力。但是，本地缓存的数据可能会与 Redis
+  中的数据不一致，因此需要定时器同步机制来保证数据的一致性。
+
+
+- **实时缓存 与 定时缓存 的折中：**
+    - 由于本地缓存是一个内存缓存，如果每次点赞或取消点赞都直接更新本地缓存，很可能会导致缓存数据与 Redis
+      中的数据不一致。
+    - 但如果每次点赞或取消点赞都直接获取 Redis 中的数据，再更新本地缓存，那跟直接从 Redis 拉取数据有什么区别呢？
+    - 因此，可以使用 Kafka 消息队列来解耦点赞和取消点赞的操作。当点赞或取消点赞时，发送消息到
+      Kafka。消费者接收消息后，向本地缓存中设置或更新一个布尔型键值，表示排行榜数据的变化。
+    - 但是，如果每次点赞或取消点赞都直接更新本地缓存，那么 Kafka 消息队列的作用就只是解耦了点赞和取消点赞的操作，而没有减轻本地缓存的压力。
+    - 因此，可以设置一个定时器，周期性检查本地缓存中的布尔键。如键存在，则表明排行榜数据有变化，触发本地缓存从 Redis
+      拉取最新数据，拉取后重置该键。
+    - 以上这样，就可以减轻缓存的压力，又能保证数据的最终一致性。
+    - 但是，这样做也有一个缺点，就是可能会导致数据的实时性降低。因为如果定时器的周期设置得太长，那么可能会有一段时间内，本地缓存中的数据是旧的。
+      因此，需要在实际使用中，根据实际情况来调节定时器的周期。
+
+### 接口调用流程
+
+1. 用户点赞或取消点赞时，发送消息到 Kafka。
+2. 消费者接收消息后，向本地缓存中设置或更新一个布尔型键值，表示排行榜数据的变化。
+3. 定时器周期性检查本地缓存中的布尔键。如键存在，则表明排行榜数据有变化，触发本地缓存从 Redis 拉取最新数据，拉取后重置该键。
+4. 用户请求排行榜数据时，从本地缓存中获取数据。
+5. 如果本地缓存中没有数据，则从 Redis 拉取数据，并发送消息到 Kafka。
+6. 消费者接收消息后，向本地缓存中设置或更新一个布尔型键值，表示排行榜数据的变化。
+7. 如果redis有数据，返回redis排行榜数据。
+8. 如果redis没有数据，去数据库拉取数据，返回数据库排行榜数据。
+9. 在以上返回数据库排行榜数据的同时，异步更新redis排行榜数据。
+
+### 代码实现
+
+- handler层: 接口调用流程的实现
+    - [article_handler](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/web/article_handler.go#L326-L350)
+- service层: 业务逻辑的实现
+    - [interactive_service](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/service/interactive.go#L30-L65)
+- repository层: 数据库与缓存操作的实现
+    - [interactive_repository](https://github.com/ycvk/geek_homework/blob/b89b00f471642aac670c2f8d2082955fead93e4b/tinybook/internal/repository/interactive.go#L35-L60)
+- dao层: 数据库操作的实现
+    - [interactive_dao](https://github.com/ycvk/geek_homework/blob/b89b00f471642aac670c2f8d2082955fead93e4b/tinybook/internal/repository/dao/interactive.go#L63-L71)
+- cache层: 缓存操作的实现
+    - [interactive_cache](https://github.com/ycvk/geek_homework/blob/b89b00f471642aac670c2f8d2082955fead93e4b/tinybook/internal/repository/cache/interactive.go#L42-L96)
+- kafka层: kafka消息队列的实现
+    - [producer](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/events/interactive/producer.go)
+    - [consumer](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/events/interactive/consumer.go)
+    - 定时器 ticker
+      的实现也在其中 [ticker](https://github.com/ycvk/geek_homework/blob/b89b00f471642aac670c2f8d2082955fead93e4b/tinybook/internal/events/interactive/consumer.go#L106-L139)
+
+### UML时序图
+
+![UML时序图](https://github.com/ycvk/PicDemo/blob/main/1783811390.png?raw=true)
