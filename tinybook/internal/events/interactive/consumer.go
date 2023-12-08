@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -22,20 +23,30 @@ const (
 	TopLikeRankNum    = 100
 )
 
+var (
+	TimeToRefreshLocalCache = 1 * time.Minute  // 定时检查本地缓存是否需要更新
+	TimeToCommitOffset      = 30 * time.Second // 多久自动commit一次offset
+)
+
 type KafkaConsumer struct {
-	reader   *kafka.Reader
-	log      *zap.Logger
-	cli      *theine.Cache[string, any]
-	redisCli redis.Cmdable
+	reader    *kafka.Reader
+	log       *zap.Logger
+	cli       *theine.Cache[string, any]
+	redisCli  redis.Cmdable
+	mu        sync.Mutex // 用于同步
+	timer     *time.Timer
+	isWaiting bool
 }
 
 func NewKafkaConsumer(log *zap.Logger, cli *theine.Cache[string, any], redisCli redis.Cmdable) *KafkaConsumer {
 	reader := InitReader(GroupLikeRankRead, TopicInteractiveLikeRank)
 	return &KafkaConsumer{
-		log:      log,
-		reader:   reader,
-		cli:      cli,
-		redisCli: redisCli,
+		log:       log,
+		reader:    reader,
+		cli:       cli,
+		redisCli:  redisCli,
+		timer:     nil,
+		isWaiting: false,
 	}
 }
 
@@ -48,7 +59,7 @@ func (k *KafkaConsumer) Start() {
 	go func() {
 		ctx := context.Background()
 		k.log.Info("like rank consumer ticker start")
-		k.Ticker(ctx, 10*time.Second) // 定时检查本地缓存是否需要更新
+		k.Ticker(ctx, TimeToRefreshLocalCache) // 定时检查本地缓存是否需要更新
 	}()
 }
 
@@ -73,9 +84,9 @@ func (k *KafkaConsumer) Consume(ctx context.Context) {
 			k.log.Error("like rank consumer unmarshal message failed", zap.Error(err))
 			continue
 		}
-		// 设置本地缓存标志位
+		// 设置redis缓存更新标志位
 		if event.Change {
-			k.cli.Set(LikeRankLocalFlag, true, 1)
+			k.Call(func() { k.redisCli.Set(ctx, LikeRankLocalFlag, true, 0) }, TimeToCommitOffset)
 		}
 	}
 }
@@ -97,7 +108,7 @@ func InitReader(groupId string, topic string) *kafka.Reader {
 		MinBytes:       10e3,                   // 10KB
 		MaxBytes:       10e6,                   // 10MB 表示消费者可接受的最大批量大小, broker将截断消息以满足此最大值 比如MinBytes=10e3, MaxBytes=10e6, 则broker将返回10KB到10MB之间的消息
 		MaxWait:        500 * time.Millisecond, // 500ms内有数据就返回, 即使没达到MinBytes, 与MinBytes取最小值, 有一个满足就返回
-		CommitInterval: 0,                      // 多久自动commit一次offset 0表示同步提交
+		CommitInterval: TimeToCommitOffset,     // 多久自动commit一次offset 0表示同步提交
 		StartOffset:    kafka.LastOffset,       // 从最新的offset开始读取
 	})
 	return r
@@ -110,9 +121,13 @@ func (k *KafkaConsumer) Ticker(ctx context.Context, duration time.Duration) {
 		select {
 		case <-ticker.C:
 			// 每固定时间检查一次本地缓存是否需要更新
-			change, ok := k.cli.Get(LikeRankLocalFlag)
-			if ok && change.(bool) {
-				// 本地缓存标志位存在, 说明有新的点赞数更新
+			change, err := k.redisCli.Get(ctx, LikeRankLocalFlag).Bool()
+			if err != nil {
+				k.log.Error("ticker get like rank local flag failed", zap.Error(err))
+				continue
+			}
+			if change {
+				// redis缓存标志位存在, 说明有新的点赞数更新
 				// 从redis中获取 topN 文章的点赞数与id
 				topNLike, err := k.redisCli.ZRevRangeWithScores(ctx, RedisLikeRankKey, 0, TopLikeRankNum-1).Result()
 				if err != nil {
@@ -131,9 +146,29 @@ func (k *KafkaConsumer) Ticker(ctx context.Context, duration time.Duration) {
 				// 将topNLike写入本地缓存
 				k.log.Info("ticker set topN like rank to local cache")
 				k.cli.Set(RedisLikeRankKey, interactivesMap, 1)
-				// 删除本地缓存标志位
-				k.cli.Delete(LikeRankLocalFlag)
+				// 删除redis缓存标志位
+				k.redisCli.Del(ctx, LikeRankLocalFlag)
 			}
 		}
 	}
+}
+
+// Call 执行函数，但保证在给定时间内最多执行一次
+func (k *KafkaConsumer) Call(f func(), duration time.Duration) {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	if k.isWaiting {
+		return
+	}
+	k.isWaiting = true
+
+	// 在另一个goroutine中执行函数
+	go func() {
+		f()
+		time.Sleep(duration)
+		k.mu.Lock()
+		defer k.mu.Unlock()
+		k.isWaiting = false
+	}()
 }
