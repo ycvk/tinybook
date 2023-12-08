@@ -5,6 +5,7 @@ import (
 	"geek_homework/tinybook/internal/domain"
 	"github.com/Yiling-J/theine-go"
 	"github.com/bytedance/sonic"
+	"github.com/cockroachdb/errors"
 	"github.com/redis/go-redis/v9"
 	"github.com/samber/lo"
 	"github.com/segmentio/kafka-go"
@@ -18,7 +19,7 @@ import (
 
 const (
 	GroupLikeRankRead = "group-article-like-rank"
-	LikeRankLocalFlag = "like_rank_local_flag"
+	LikeRankLocalFlag = "rank:like_rank_local_flag"
 	RedisLikeRankKey  = "article:like_count"
 	TopLikeRankNum    = 100
 )
@@ -123,7 +124,11 @@ func (k *KafkaConsumer) Ticker(ctx context.Context, duration time.Duration) {
 			// 每固定时间检查一次本地缓存是否需要更新
 			change, err := k.redisCli.Get(ctx, LikeRankLocalFlag).Bool()
 			if err != nil {
-				k.log.Error("ticker get like rank local flag failed", zap.Error(err))
+				if errors.Is(err, redis.Nil) {
+					// redis缓存标志位不存在, 说明没有新的点赞数更新
+				} else {
+					k.log.Error("ticker get like rank local flag failed", zap.Error(err))
+				}
 				continue
 			}
 			if change {
