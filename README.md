@@ -585,12 +585,12 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 - dao层: 数据库操作的实现
     - [interactive_dao](https://github.com/ycvk/geek_homework/blob/b89b00f471642aac670c2f8d2082955fead93e4b/tinybook/internal/repository/dao/interactive.go#L63-L71)
 - cache层: 缓存操作的实现
-    - [interactive_cache](https://github.com/ycvk/geek_homework/blob/b89b00f471642aac670c2f8d2082955fead93e4b/tinybook/internal/repository/cache/interactive.go#L42-L96)
+    - [interactive_cache](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/repository/cache/interactive.go#L42-L108)
 - kafka层: kafka消息队列的实现
     - [producer](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/events/interactive/producer.go)
     - [consumer](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/events/interactive/consumer.go)
     - 定时器 ticker
-      的实现也在其中 [ticker](https://github.com/ycvk/geek_homework/blob/b89b00f471642aac670c2f8d2082955fead93e4b/tinybook/internal/events/interactive/consumer.go#L106-L139)
+      的实现也在其中 [ticker](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/events/interactive/consumer.go#L118-L159)
     - 配合定时器的固定时间尺度，比如 **(1分钟/8小时/1天)** ，可以做到 **每固定时间** 去检查一次redis缓存中的布尔键。
 
     - 如果键存在，则表明排行榜数据有变化，触发本地缓存从 Redis 拉取最新数据，拉取后重置该键。如果键不存在，则表明排行榜数据没有变化，不更新本地缓存。
