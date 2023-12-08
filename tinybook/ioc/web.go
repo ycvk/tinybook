@@ -39,6 +39,7 @@ func InitHandlerFunc(redisClient redis.Cmdable, handler jwt.Handler, logger *zap
 	errorLog := initErrorLog(logger)        // 错误日志
 	loginJWT := initLoginJWT(handler)       // 登录jwt
 	return []gin.HandlerFunc{corsConfig, rateLimit, log, errorLog, loginJWT}
+	//return []gin.HandlerFunc{corsConfig, log, errorLog, loginJWT}
 }
 
 // initCorsConfig 跨域配置

@@ -10,7 +10,7 @@ Golang class homework in Geek Space.
 - [Week04: 引入本地缓存](#week04-引入本地缓存)
 - [Week05: 同步转异步的容错机制](#week05-同步转异步的容错机制)
 - [Week06: 优化打印日志的部分](#week06-优化打印日志的部分)
-- [Week07: 找出点赞数量前N的数据](#week07-找出点赞数量前n的数据)
+- [Week07: 找出点赞数量前N的数据](#week07-找出点赞数量前N的数据)
 
 ---
 
@@ -583,3 +583,35 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 ### UML时序图
 
 ![UML时序图](https://github.com/ycvk/PicDemo/blob/main/1783811390.png?raw=true)
+
+### 测试结果
+
+#### 测试环境
+
+- MacBook Pro 2021 M1Max 32G
+- macOS Sonoma 14.1.2
+- Go 1.21.4
+- Redis 7
+- Kafka 3.6.0
+- MySQL 8.0.27
+
+#### 1. 没有缓存时，从数据库拉取数据
+
+![test_01](https://github.com/ycvk/PicDemo/blob/main/2108972058.png?raw=true)
+
+#### 2. 有redis缓存时，从redis拉取数据
+
+![test_02](https://github.com/ycvk/PicDemo/blob/main/764976255.png?raw=true)
+
+#### 3. 有本地缓存时，从本地缓存拉取数据
+
+![test_03](https://github.com/ycvk/PicDemo/blob/main/44177685.png?raw=true)
+
+#### 结论
+
+可看到，当有本地缓存时，平均响应时间直接降低了50%以上。
+QPS为8151.66，比没有缓存时提高了5倍多。且没有任何错误。
+
+直接请求数据库时，可以看到后面的请求响应时间都是timeout，错误率超过50%，比走redis慢了4倍，比走本地缓存慢了5倍多。
+
+---
