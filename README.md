@@ -504,7 +504,7 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 
 ---
 
-<h2 id="Week07">Week07: 找出点赞数量前 N 的数据</h2>
+<h2 id="Week07">Week07: 找出点赞数量前N的数据</h2>
 
 [GitHub Link](https://github.com/ycvk/geek_homework/tree/week07)
 
@@ -528,6 +528,9 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 
 - 定时器同步机制：设置可调节的定时器，周期性检查本地缓存中的布尔键。如键存在，则表明排行榜数据有变化，触发本地缓存从 Redis
   拉取最新数据，拉取后重置该键。
+
+
+- 控制获取排行榜的TopN数量：控制只获取最多排行榜前N个数据，避免数据量过大。也避免了非法请求 N 过大，造成获取数据量过大的情况。
 
 ### 业务折中
 
@@ -579,6 +582,9 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
     - [consumer](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/events/interactive/consumer.go)
     - 定时器 ticker
       的实现也在其中 [ticker](https://github.com/ycvk/geek_homework/blob/b89b00f471642aac670c2f8d2082955fead93e4b/tinybook/internal/events/interactive/consumer.go#L106-L139)
+    - 配合定时器的固定时间尺度，比如 **(1分钟/8小时/1天)** ，可以做到 **每固定时间** 去检查一次本地缓存中的布尔键。
+
+      如果键存在，则表明排行榜数据有变化，触发本地缓存从 Redis 拉取最新数据，拉取后重置该键。如果键不存在，则表明排行榜数据没有变化，不更新本地缓存。
 
 ### UML时序图
 

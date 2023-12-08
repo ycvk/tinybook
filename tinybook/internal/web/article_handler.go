@@ -333,6 +333,13 @@ func (h *ArticleHandler) Rank(context *gin.Context) {
 		})
 		return
 	}
+	if num <= 0 || num > 100 {
+		context.JSON(http.StatusOK, Result{
+			Code: 400,
+			Msg:  "非法参数",
+		})
+		return
+	}
 	ranks, err := h.interactiveService.GetLikeRanks(context, h.biz, num)
 	if err != nil {
 		context.JSON(http.StatusOK, Result{
