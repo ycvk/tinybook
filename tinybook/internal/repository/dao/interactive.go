@@ -49,6 +49,7 @@ type InteractiveDAO interface {
 	GetInteractive(ctx context.Context, biz string, id int64) (Interactive, error)
 	IsLiked(ctx context.Context, biz string, id int64, uid int64) (bool, error)
 	IsCollected(ctx context.Context, biz string, id int64, uid int64) (bool, error)
+	SelectTopNLike(ctx context.Context, biz string, num int64) ([]Interactive, error)
 }
 
 type GormInteractiveDAO struct {
@@ -57,6 +58,16 @@ type GormInteractiveDAO struct {
 
 func NewGormInteractiveDAO(db *gorm.DB) InteractiveDAO {
 	return &GormInteractiveDAO{db: db}
+}
+
+func (g *GormInteractiveDAO) SelectTopNLike(ctx context.Context, biz string, num int64) ([]Interactive, error) {
+	var interactives []Interactive
+	err := g.db.WithContext(ctx).Model(&Interactive{}).
+		Where("biz = ?", biz).
+		Order("like_count desc").
+		Limit(int(num)).
+		Find(&interactives).Error
+	return interactives, err
 }
 
 func (g *GormInteractiveDAO) BatchIncreaseReadCount(ctx context.Context, biz string, ids []int64) error {
@@ -173,7 +184,7 @@ func (g *GormInteractiveDAO) DeleteLikeRecord(ctx context.Context, biz string, i
 			return err
 		}
 		return tx.Model(&Interactive{}).
-			Where("biz_id = ? and biz = ?", id, biz).
+			Where("biz_id = ? and biz = ? and like_count > ?", id, biz, 0).
 			Updates(map[string]interface{}{
 				"like_count": gorm.Expr("like_count - ?", 1),
 				"utime":      now,

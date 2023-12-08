@@ -5,6 +5,9 @@ import (
 	"geek_homework/tinybook/internal/domain"
 	"geek_homework/tinybook/internal/repository/cache"
 	"geek_homework/tinybook/internal/repository/dao"
+	"github.com/samber/lo"
+	"go.uber.org/zap"
+	"time"
 )
 
 type InteractiveRepository interface {
@@ -16,15 +19,44 @@ type InteractiveRepository interface {
 	GetInteractive(ctx context.Context, biz string, id int64) (domain.Interactive, error)
 	Liked(ctx context.Context, biz string, id int64, uid int64) (bool, error)
 	Collected(ctx context.Context, biz string, id int64, uid int64) (bool, error)
+	GetLikeRanks(ctx context.Context, biz string, num int64) ([]domain.Interactive, error)
 }
 
 type CachedInteractiveRepository struct {
 	dao   dao.InteractiveDAO
 	cache cache.InteractiveCache
+	log   *zap.Logger
 }
 
-func NewCachedInteractiveRepository(dao dao.InteractiveDAO, cache cache.InteractiveCache) InteractiveRepository {
-	return &CachedInteractiveRepository{dao: dao, cache: cache}
+func NewCachedInteractiveRepository(dao dao.InteractiveDAO, cache cache.InteractiveCache, logger *zap.Logger) InteractiveRepository {
+	return &CachedInteractiveRepository{dao: dao, cache: cache, log: logger}
+}
+
+func (c *CachedInteractiveRepository) GetLikeRanks(ctx context.Context, biz string, num int64) ([]domain.Interactive, error) {
+	// 从缓存中获取 topN 文章的点赞数与id
+	topNLikeCache, err2 := c.cache.GetTopNLike(ctx, biz, num)
+	if err2 == nil && len(topNLikeCache) > 0 { // 缓存命中
+		return topNLikeCache, nil
+	}
+	// 从数据库中获取 topN 文章的点赞数与id
+	topNLike, err := c.dao.SelectTopNLike(ctx, biz, num)
+	if err != nil {
+		return nil, err
+	}
+	// dao转换为 domain.Interactive
+	interactives := lo.Map(topNLike, func(item dao.Interactive, index int) domain.Interactive {
+		return c.daoToDomain(item)
+	})
+	// 缓存
+	go func() {
+		timeout, cancelFunc := context.WithTimeout(ctx, 2*time.Second)
+		defer cancelFunc()
+		err = c.cache.SetTopNLike(timeout, biz, interactives)
+		if err != nil {
+			c.log.Error("set topN like to cache failed", zap.Error(err))
+		}
+	}()
+	return interactives, nil
 }
 
 func (c *CachedInteractiveRepository) BatchIncreaseReadCount(ctx context.Context, biz string, bizIds []int64) error {
@@ -101,6 +133,9 @@ func (c *CachedInteractiveRepository) IncreaseReadCount(ctx context.Context, biz
 
 func (c *CachedInteractiveRepository) daoToDomain(interactive dao.Interactive) domain.Interactive {
 	return domain.Interactive{
+		Biz:   interactive.Biz,
+		BizId: interactive.BizId,
+
 		LikeCount:    interactive.LikeCount,
 		CollectCount: interactive.CollectCount,
 		ReadCount:    interactive.ReadCount,

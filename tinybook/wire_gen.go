@@ -8,6 +8,7 @@ package main
 
 import (
 	"geek_homework/tinybook/internal/events/article"
+	"geek_homework/tinybook/internal/events/interactive"
 	"geek_homework/tinybook/internal/repository"
 	"geek_homework/tinybook/internal/repository/cache"
 	"geek_homework/tinybook/internal/repository/dao"
@@ -49,16 +50,18 @@ func InitWebServer() *App {
 	articleCache := cache.NewRedisArticleCache(cmdable)
 	articleRepository := repository.NewCachedArticleRepository(articleDAO, articleCache, userRepository, logger)
 	writer := ioc.InitWriter()
-	readEventProducer := article.NewKafkaAsyncProducer(writer)
+	readEventProducer := article.NewKafkaArticleProducer(writer)
 	articleService := service.NewArticleService(articleRepository, readEventProducer, logger)
 	interactiveDAO := dao.NewGormInteractiveDAO(db)
-	interactiveCache := cache.NewRedisInteractiveCache(cmdable, logger)
-	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
-	interactiveService := service.NewInteractiveService(interactiveRepository)
+	likeRankEventProducer := interactive.NewKafkaLikeRankProducer(writer)
+	interactiveCache := cache.NewRedisInteractiveCache(cmdable, logger, theineCache, likeRankEventProducer)
+	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, logger)
+	interactiveService := service.NewInteractiveService(interactiveRepository, articleRepository, likeRankEventProducer, logger)
 	articleHandler := web.NewArticleHandler(articleService, interactiveService, logger)
 	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler)
 	kafkaConsumer := article.NewKafkaConsumer(interactiveRepository, logger)
-	v2 := article.CollectConsumer(kafkaConsumer)
+	interactiveKafkaConsumer := interactive.NewKafkaConsumer(logger, theineCache, cmdable)
+	v2 := article.CollectConsumer(kafkaConsumer, interactiveKafkaConsumer)
 	app := &App{
 		server:    engine,
 		consumers: v2,

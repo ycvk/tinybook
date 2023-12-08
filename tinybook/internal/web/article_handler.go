@@ -323,6 +323,32 @@ func (h *ArticleHandler) Collect(ctx *gin.Context) {
 	})
 }
 
+func (h *ArticleHandler) Rank(context *gin.Context) {
+	param := context.Param("id")
+	num, err := strconv.ParseInt(param, 10, 64)
+	if err != nil {
+		context.JSON(http.StatusOK, Result{
+			Code: 400,
+			Msg:  "参数错误",
+		})
+		return
+	}
+	ranks, err := h.interactiveService.GetLikeRanks(context, h.biz, num)
+	if err != nil {
+		context.JSON(http.StatusOK, Result{
+			Code: 500,
+			Msg:  "服务器错误",
+		})
+		h.l.Error("获取点赞排行榜失败, 数量: "+strconv.FormatInt(num, 10), zap.Error(err))
+		return
+	}
+	context.JSON(http.StatusOK, Result{
+		Code: 200,
+		Msg:  "获取成功",
+		Data: ranks,
+	})
+}
+
 func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 	group := engine.Group("/articles")
 	group.POST("/edit", h.Edit)         // 编辑文章
@@ -333,4 +359,5 @@ func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 	group.GET("/pub/:id", h.PubDetail)  // 读者查看文章详情
 	group.POST("/like", h.Like)         // 点赞
 	group.POST("/collect", h.Collect)   // 收藏
+	group.GET("/rank/:id", h.Rank)      // 点赞排行榜
 }

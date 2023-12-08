@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"geek_homework/tinybook/internal/events"
+	"geek_homework/tinybook/internal/events/interactive"
 	"geek_homework/tinybook/internal/repository"
 	"github.com/bytedance/sonic"
 	"github.com/segmentio/kafka-go"
@@ -135,8 +136,8 @@ func (k *KafkaConsumer) BatchConsume(ctx context.Context) {
 	}
 }
 
-func CollectConsumer(consumer *KafkaConsumer) []events.Consumer {
-	return []events.Consumer{consumer}
+func CollectConsumer(consumer *KafkaConsumer, likeRankConsumer *interactive.KafkaConsumer) []events.Consumer {
+	return []events.Consumer{consumer, likeRankConsumer}
 }
 
 func InitReader(groupId string, topic string) *kafka.Reader {

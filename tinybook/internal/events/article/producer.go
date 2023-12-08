@@ -21,7 +21,7 @@ type KafkaAsyncProducer struct {
 	writer *kafka.Writer
 }
 
-func NewKafkaAsyncProducer(writer *kafka.Writer) ReadEventProducer {
+func NewKafkaArticleProducer(writer *kafka.Writer) ReadEventProducer {
 	return &KafkaAsyncProducer{writer: writer}
 }
 
