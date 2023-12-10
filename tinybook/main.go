@@ -2,14 +2,17 @@ package main
 
 import (
 	"geek_homework/tinybook/ioc"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 	_ "github.com/spf13/viper/remote"
+	"net/http"
 )
 
 func main() {
 	initViper()
 	ioc.InitSnowflake()
 	app := InitWebServer()
+	initPrometheus()
 	for i := range app.consumers {
 		app.consumers[i].Start()
 	}
@@ -17,6 +20,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func initPrometheus() {
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":8082", nil)
+	}()
 }
 
 func initViper() {

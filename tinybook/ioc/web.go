@@ -4,6 +4,7 @@ import (
 	"geek_homework/tinybook/internal/web"
 	"geek_homework/tinybook/internal/web/jwt"
 	"geek_homework/tinybook/internal/web/middleware"
+	"geek_homework/tinybook/pkg/ginx/middleware/prometheus"
 	"geek_homework/tinybook/pkg/ginx/middleware/ratelimit"
 	"geek_homework/tinybook/pkg/limiter"
 	"github.com/gin-contrib/cors"
@@ -35,10 +36,11 @@ func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler,
 func InitHandlerFunc(redisClient redis.Cmdable, handler jwt.Handler, logger *zap.Logger) []gin.HandlerFunc {
 	corsConfig := initCorsConfig()          // 跨域配置
 	rateLimit := initRateLimit(redisClient) // 限流器
-	log := initLogger(logger)               // 日志 todo 本地开发时，可以注释掉
+	log := initLogger(logger)               // 日志请求记录器
 	errorLog := initErrorLog(logger)        // 错误日志
 	loginJWT := initLoginJWT(handler)       // 登录jwt
-	return []gin.HandlerFunc{corsConfig, rateLimit, log, errorLog, loginJWT}
+	prometheus := initPrometheus()          // prometheus
+	return []gin.HandlerFunc{corsConfig, rateLimit, log, errorLog, loginJWT, prometheus}
 	//return []gin.HandlerFunc{corsConfig, log, errorLog, loginJWT}
 }
 
@@ -60,11 +62,23 @@ func initErrorLog(logger *zap.Logger) gin.HandlerFunc {
 	return middleware.NewErrorLogMiddleware(logger).Build()
 }
 
-// initLogger 初始化日志
+func initPrometheus() gin.HandlerFunc {
+	return prometheus.NewBuilder("tinybook", "gin", "http_request", "统计gin的http接口请求数据", "1").BuildResponseTime()
+}
+
+// initLogger 初始化日志请求记录器
 func initLogger(logger *zap.Logger) gin.HandlerFunc {
 	return middleware.NewLogMiddleware(func(ctx *gin.Context, accessLog *middleware.AccessLog) {
-		logger.Info("", zap.Any("accessLog", accessLog))
-	}).AllowPrintReqBody().AllowPrintRespBody().Build()
+		logger.Info("HTTP Log",
+			zap.String("Path", accessLog.Path),
+			zap.String("Method", accessLog.Method),
+			zap.String("IP", accessLog.Ip),
+			zap.String("RequestBody", accessLog.ReqBody),
+			zap.String("ResponseBody", accessLog.RespBody),
+			zap.String("Duration", accessLog.Duration),
+			zap.Int("Status", accessLog.Status),
+		)
+	}).AllowPrintReqBody().AllowPrintRespBody().Build() // 允许打印请求和响应的body
 }
 
 // initLoginJWT 初始化登录jwt

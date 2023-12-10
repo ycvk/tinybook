@@ -1,0 +1,6 @@
+scrape_configs:
+  - job_name: 'tinybook'
+    scrape_interval: 5s
+    scrape_timeout: 3s
+    static_configs:
+      - targets: [ "host.orb.internal:8082" ]
