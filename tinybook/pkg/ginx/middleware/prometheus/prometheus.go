@@ -57,3 +57,21 @@ func (b *Builder) BuildResponseTime() gin.HandlerFunc {
 		ctx.Next()
 	}
 }
+
+func (b *Builder) BuildActiveRequest() gin.HandlerFunc {
+	gauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: b.Namespace,
+		Subsystem: b.Subsystem,
+		Name:      b.Name + "_active_request",
+		Help:      b.Help,
+		ConstLabels: map[string]string{
+			"instance_id": b.InstanceId,
+		},
+	})
+	prometheus.MustRegister(gauge)
+	return func(ctx *gin.Context) {
+		gauge.Inc()       // 每次请求进来，就将 Gauge 加 1
+		defer gauge.Dec() // 每次请求结束，就将 Gauge 减 1
+		ctx.Next()
+	}
+}
