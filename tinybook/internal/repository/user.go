@@ -6,6 +6,7 @@ import (
 	"geek_homework/tinybook/internal/domain"
 	"geek_homework/tinybook/internal/repository/cache"
 	"geek_homework/tinybook/internal/repository/dao"
+	"github.com/gin-gonic/gin"
 	"log/slog"
 	"time"
 )
@@ -21,6 +22,7 @@ type UserRepository interface {
 	FindById(ctx context.Context, id int64) (domain.User, error)
 	FindByPhone(ctx context.Context, phone string) (domain.User, error)
 	UpdateById(ctx context.Context, id int64, birthday string, nickname string, me string) error
+	FindByWechat(ctx *gin.Context, info domain.WechatInfo) (domain.User, error)
 }
 
 // CachedUserRepository 带缓存的UserRepository
@@ -48,6 +50,14 @@ func (repo *CachedUserRepository) Create(ctx context.Context, user domain.User) 
 		Phone: sql.NullString{
 			String: user.Phone,
 			Valid:  user.Phone != "",
+		},
+		WechatOpenId: sql.NullString{
+			String: user.WechatInfo.OpenId,
+			Valid:  user.WechatInfo.OpenId != "",
+		},
+		WechatUnionId: sql.NullString{
+			String: user.WechatInfo.UnionId,
+			Valid:  user.WechatInfo.UnionId != "",
 		},
 	})
 }
@@ -140,5 +150,18 @@ func (repo *CachedUserRepository) FindByPhone(ctx context.Context, phone string)
 		Id:    byPhone.Id,
 		Email: byPhone.Email.String,
 		Phone: byPhone.Phone.String,
+	}, nil
+}
+
+func (repo *CachedUserRepository) FindByWechat(ctx *gin.Context, info domain.WechatInfo) (domain.User, error) {
+	byWechat, err := repo.userDao.FindByWechatOpenId(ctx, info.OpenId)
+	if err != nil {
+		slog.Error("根据微信号查找用户失败", "wechatId", info.OpenId)
+		return domain.User{}, err
+	}
+	return domain.User{
+		Id:    byWechat.Id,
+		Email: byWechat.Email.String,
+		Phone: byWechat.Phone.String,
 	}, nil
 }

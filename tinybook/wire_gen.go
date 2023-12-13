@@ -12,20 +12,27 @@ import (
 	"geek_homework/tinybook/internal/repository/dao"
 	"geek_homework/tinybook/internal/service"
 	"geek_homework/tinybook/internal/web"
+	"geek_homework/tinybook/internal/web/jwt"
 	"geek_homework/tinybook/ioc"
 	"github.com/gin-gonic/gin"
+)
+
+import (
+	_ "github.com/spf13/viper/remote"
 )
 
 // Injectors from wire.go:
 
 func InitWebServer() *gin.Engine {
 	cmdable := ioc.InitRedis()
-	v := ioc.InitHandlerFunc(cmdable)
-	db := ioc.InitDB()
+	handler := jwt.NewRedisJWTHandler(cmdable)
+	logger := ioc.InitLogger()
+	v := ioc.InitHandlerFunc(cmdable, handler, logger)
+	db := ioc.InitDB(logger)
 	userDAO := dao.NewGormUserDAO(db)
 	userCache := cache.NewRedisUserCache(cmdable)
 	userRepository := repository.NewCachedUserRepository(userDAO, userCache)
-	userService := service.NewUserService(userRepository)
+	userService := service.NewUserService(userRepository, logger)
 	theineCache := ioc.InitLocalCache()
 	codeCache := cache.NewLocalCodeCache(theineCache)
 	codeRepository := repository.NewCachedCodeRepository(codeCache)
@@ -33,7 +40,9 @@ func InitWebServer() *gin.Engine {
 	smsRepository := repository.NewGormSMSRepository(smsdao)
 	smsService := ioc.InitSMSService(cmdable, smsRepository)
 	codeService := service.NewCodeService(codeRepository, smsService)
-	userHandler := web.NewUserHandler(userService, codeService)
-	engine := ioc.InitWebServer(v, userHandler)
+	userHandler := web.NewUserHandler(userService, codeService, handler)
+	wechatService := ioc.InitWechatService()
+	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService, handler)
+	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler)
 	return engine
 }

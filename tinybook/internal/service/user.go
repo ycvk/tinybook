@@ -6,6 +6,7 @@ import (
 	"geek_homework/tinybook/internal/repository"
 	"github.com/cockroachdb/errors"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"log/slog"
 )
@@ -20,17 +21,20 @@ type UserService interface {
 	Login(ctx context.Context, email string, password string) (domain.User, error)
 	Edit(ctx *gin.Context, user domain.User) error
 	Profile(ctx *gin.Context, userId int64) (domain.User, error)
-	LoginOrSignup(ctx *gin.Context, phone string) (domain.User, error)
+	LoginOrSignupByPhone(ctx *gin.Context, phone string) (domain.User, error)
+	LoginOrSignupByWechat(ctx *gin.Context, wechatInfo domain.WechatInfo) (domain.User, error)
 }
 
 type userService struct {
 	userRepo repository.UserRepository
+	log      *zap.Logger
 }
 
 // NewUserService 构建UserService
-func NewUserService(userRepository repository.UserRepository) UserService {
+func NewUserService(userRepository repository.UserRepository, logger *zap.Logger) UserService {
 	return &userService{
 		userRepo: userRepository,
+		log:      logger,
 	}
 }
 
@@ -39,7 +43,7 @@ func (userService *userService) Signup(ctx *gin.Context, user domain.User) error
 	password := user.ValidatePassword()
 	email := user.ValidateEmail()
 	if !email {
-		slog.Error("邮箱格式不正确", "email", user.Email)
+		userService.log.Error("邮箱格式不正确", zap.String("email", user.Email))
 		return errors.New("邮箱格式不正确")
 	}
 	if !password {
@@ -95,8 +99,8 @@ func (userService *userService) Profile(ctx *gin.Context, userId int64) (domain.
 	return userService.userRepo.FindById(ctx, userId)
 }
 
-// LoginOrSignup 登录或注册
-func (userService *userService) LoginOrSignup(ctx *gin.Context, phone string) (domain.User, error) {
+// LoginOrSignupByPhone 手机号登录或注册
+func (userService *userService) LoginOrSignupByPhone(ctx *gin.Context, phone string) (domain.User, error) {
 	byPhone, err := userService.userRepo.FindByPhone(ctx, phone)
 	if err != nil {
 		if err.Error() == ErrUserNotFound {
@@ -122,4 +126,32 @@ func (userService *userService) LoginOrSignup(ctx *gin.Context, phone string) (d
 		return domain.User{}, err
 	}
 	return byPhone, nil
+}
+
+func (userService *userService) LoginOrSignupByWechat(ctx *gin.Context, wechatInfo domain.WechatInfo) (domain.User, error) {
+	we, err := userService.userRepo.FindByWechat(ctx, wechatInfo)
+	if err != nil {
+		if err.Error() == ErrUserNotFound {
+			// 用户不存在, 注册
+			user := domain.User{
+				WechatInfo: wechatInfo,
+			}
+			createErr := userService.userRepo.Create(ctx, user)
+			if createErr != nil {
+				// 注册失败, 可能是手机号已存在, 也可能是其他原因
+				if createErr.Error() == ErrorUserExist {
+					return domain.User{}, errors.New("微信号已存在")
+				}
+				return domain.User{}, err
+			}
+			// 注册成功后再次查询
+			byWechat, findErr := userService.userRepo.FindByWechat(ctx, wechatInfo)
+			if findErr != nil {
+				return domain.User{}, err
+			}
+			return byWechat, nil
+		}
+		return domain.User{}, err
+	}
+	return we, nil
 }

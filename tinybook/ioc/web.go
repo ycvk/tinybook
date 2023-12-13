@@ -3,6 +3,7 @@ package ioc
 import (
 	"geek_homework/tinybook/config"
 	"geek_homework/tinybook/internal/web"
+	"geek_homework/tinybook/internal/web/jwt"
 	"geek_homework/tinybook/internal/web/middleware"
 	"geek_homework/tinybook/pkg/ginx/middleware/ratelimit"
 	"geek_homework/tinybook/pkg/limiter"
@@ -11,33 +12,39 @@ import (
 	redisSession "github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 	"strings"
 	"time"
 )
 
-func InitWebServer(handlerFunc []gin.HandlerFunc, handler *web.UserHandler) *gin.Engine {
+func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler, wechatHandler *web.OAuth2WechatHandler) *gin.Engine {
 	engine := gin.Default()
 	// 注册中间件
 	engine.Use(handlerFunc...)
-	// 注册路由
-	handler.RegisterRoutes(engine)
+	// 注册用户路由
+	userHandler.RegisterRoutes(engine)
+	// 注册oauth2路由
+	wechatHandler.RegisterRoutes(engine)
 	return engine
 }
 
-func InitHandlerFunc(redisClient redis.Cmdable) []gin.HandlerFunc {
-	corsConfig := initCorsConfig()
-	rateLimit := initRateLimit(redisClient)
-	loginJWT := initLoginJWT()
-	return []gin.HandlerFunc{corsConfig, rateLimit, loginJWT}
+// InitHandlerFunc 初始化中间件
+func InitHandlerFunc(redisClient redis.Cmdable, handler jwt.Handler, logger *zap.Logger) []gin.HandlerFunc {
+	corsConfig := initCorsConfig()          // 跨域配置
+	rateLimit := initRateLimit(redisClient) // 限流器
+	log := initLogger(logger)               // 日志
+	errorLog := initErrorLog(logger)        // 错误日志
+	loginJWT := initLoginJWT(handler)       // 登录jwt
+	return []gin.HandlerFunc{corsConfig, rateLimit, log, errorLog, loginJWT}
 }
 
 // initCorsConfig 跨域配置
 func initCorsConfig() gin.HandlerFunc {
 	return cors.New(cors.Config{
-		AllowMethods:     []string{"POST", "GET", "OPTIONS"},        //允许跨域的方法
-		AllowHeaders:     []string{"Content-Type", "Authorization"}, // 允许跨域的Header
-		ExposeHeaders:    []string{"X-Jwt-Token"},                   // 允许访问的响应头
-		AllowCredentials: true,                                      //  允许携带cookie
+		AllowMethods:     []string{"POST", "GET", "OPTIONS"},         //允许跨域的方法
+		AllowHeaders:     []string{"Content-Type", "Authorization"},  // 允许跨域的Header
+		ExposeHeaders:    []string{"X-Jwt-Token", "X-Refresh-Token"}, // 允许访问的响应头
+		AllowCredentials: true,                                       //  允许携带cookie
 		AllowOriginFunc: func(origin string) bool { //允许跨域的域名
 			return strings.HasPrefix(origin, "http://localhost")
 		},
@@ -45,9 +52,20 @@ func initCorsConfig() gin.HandlerFunc {
 	})
 }
 
+func initErrorLog(logger *zap.Logger) gin.HandlerFunc {
+	return middleware.NewErrorLogMiddleware(logger).Build()
+}
+
+// initLogger 初始化日志
+func initLogger(logger *zap.Logger) gin.HandlerFunc {
+	return middleware.NewLogMiddleware(func(ctx *gin.Context, accessLog *middleware.AccessLog) {
+		logger.Info("", zap.Any("accessLog", accessLog))
+	}).AllowPrintReqBody().AllowPrintRespBody().Build()
+}
+
 // initLoginJWT 初始化登录jwt
-func initLoginJWT() gin.HandlerFunc {
-	middlewareBuilder := middleware.LoginJWTMiddlewareBuilder{}
+func initLoginJWT(handler jwt.Handler) gin.HandlerFunc {
+	middlewareBuilder := middleware.NewLoginJWTMiddlewareBuilder(handler)
 	return middlewareBuilder.Build()
 }
 

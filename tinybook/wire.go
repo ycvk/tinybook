@@ -8,6 +8,7 @@ import (
 	"geek_homework/tinybook/internal/repository/dao"
 	"geek_homework/tinybook/internal/service"
 	"geek_homework/tinybook/internal/web"
+	"geek_homework/tinybook/internal/web/jwt"
 	"geek_homework/tinybook/ioc"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
@@ -24,10 +25,12 @@ func InitWebServer() *gin.Engine {
 		cache.NewLocalCodeCache, repository.NewCachedCodeRepository, service.NewCodeService,
 		// 初始化sms模块
 		ioc.InitSMSService, repository.NewGormSMSRepository, dao.NewGormSMSDAO,
+		// 初始化oauth2模块
+		ioc.InitWechatService,
 		// 初始化handler
-		web.NewUserHandler,
-		// 初始化web
-		ioc.InitWebServer, ioc.InitHandlerFunc,
+		web.NewUserHandler, web.NewOAuth2WechatHandler, jwt.NewRedisJWTHandler,
+		// 初始化web 和 中间件
+		ioc.InitWebServer, ioc.InitHandlerFunc, ioc.InitLogger,
 	)
 
 	return gin.Default()

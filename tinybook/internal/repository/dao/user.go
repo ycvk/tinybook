@@ -20,6 +20,7 @@ type UserDAO interface {
 	FindByEmail(ctx context.Context, email string) (User, error)
 	FindById(ctx context.Context, id int64) (User, error)
 	FindByPhone(ctx context.Context, phone string) (User, error)
+	FindByWechatOpenId(ctx context.Context, openId string) (User, error)
 	Update(ctx context.Context, user User) error
 }
 
@@ -29,15 +30,17 @@ type GormUserDAO struct {
 
 // User 用户表
 type User struct {
-	Id       int64          `gorm:"column:id;primaryKey;autoIncrement;not null"`
-	Email    sql.NullString `gorm:"unique;column:email"`
-	Phone    sql.NullString `gorm:"unique;column:phone"`
-	Password string         `gorm:"column:password"`
-	Ctime    int64          `gorm:"column:ctime"`
-	Utime    int64          `gorm:"column:utime"`
-	Nickname string         `gorm:"column:nickname"`
-	Birthday string         `gorm:"column:birthday"`
-	AboutMe  string         `gorm:"column:about_me"`
+	Id            int64          `gorm:"column:id;primaryKey;autoIncrement;not null"`
+	Email         sql.NullString `gorm:"unique;column:email"`
+	Phone         sql.NullString `gorm:"unique;column:phone"`
+	Password      string         `gorm:"column:password"`
+	Ctime         int64          `gorm:"column:ctime"`
+	Utime         int64          `gorm:"column:utime"`
+	Nickname      string         `gorm:"column:nickname"`
+	Birthday      string         `gorm:"column:birthday"`
+	AboutMe       string         `gorm:"column:about_me"`
+	WechatOpenId  sql.NullString `gorm:"unique;column:wechat_open_id"`
+	WechatUnionId sql.NullString `gorm:"column:wechat_union_id"`
 }
 
 func NewGormUserDAO(db *gorm.DB) UserDAO {
@@ -85,5 +88,12 @@ func (dao *GormUserDAO) Update(ctx context.Context, user User) error {
 func (dao *GormUserDAO) FindByPhone(ctx context.Context, phone string) (User, error) {
 	var user User
 	err := dao.db.WithContext(ctx).Where("phone = ?", phone).First(&user).Error
+	return user, err
+}
+
+// FindByWechatOpenId 根据微信openId查找用户
+func (dao *GormUserDAO) FindByWechatOpenId(ctx context.Context, openId string) (User, error) {
+	var user User
+	err := dao.db.WithContext(ctx).Where("wechat_open_id = ?", openId).First(&user).Error
 	return user, err
 }
