@@ -1,22 +1,33 @@
 package main
 
 import (
+	"context"
 	"geek_homework/tinybook/ioc"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 	_ "github.com/spf13/viper/remote"
 	"net/http"
+	"time"
 )
 
+func init() {
+	initViper()         // 初始化配置
+	ioc.InitSnowflake() // 初始化雪花算法
+	initPrometheus()    // 初始化prometheus
+}
+
 func main() {
-	initViper()
-	ioc.InitSnowflake()
-	app := InitWebServer()
-	initPrometheus()
-	for i := range app.consumers {
+	otel := ioc.InitOTEL() // 初始化otel
+	defer func() {
+		timeout, cancelFunc := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancelFunc()
+		otel(timeout) // 服务器关闭时, 超时控制去关闭otel
+	}()
+	app := InitWebServer()         // 初始化web服务
+	for i := range app.consumers { // 启动kafka消费者
 		app.consumers[i].Start()
 	}
-	err := app.server.Run(":8081")
+	err := app.server.Run(":8081") // 启动web服务
 	if err != nil {
 		panic(err)
 	}

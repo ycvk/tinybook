@@ -5,7 +5,6 @@ import (
 	"geek_homework/tinybook/internal/domain"
 	"geek_homework/tinybook/internal/repository"
 	"github.com/cockroachdb/errors"
-	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"log/slog"
@@ -17,12 +16,12 @@ var (
 )
 
 type UserService interface {
-	Signup(ctx *gin.Context, user domain.User) error
+	Signup(ctx context.Context, user domain.User) error
 	Login(ctx context.Context, email string, password string) (domain.User, error)
-	Edit(ctx *gin.Context, user domain.User) error
-	Profile(ctx *gin.Context, userId int64) (domain.User, error)
-	LoginOrSignupByPhone(ctx *gin.Context, phone string) (domain.User, error)
-	LoginOrSignupByWechat(ctx *gin.Context, wechatInfo domain.WechatInfo) (domain.User, error)
+	Edit(ctx context.Context, user domain.User) error
+	Profile(ctx context.Context, userId int64) (domain.User, error)
+	LoginOrSignupByPhone(ctx context.Context, phone string) (domain.User, error)
+	LoginOrSignupByWechat(ctx context.Context, wechatInfo domain.WechatInfo) (domain.User, error)
 }
 
 type userService struct {
@@ -39,7 +38,7 @@ func NewUserService(userRepository repository.UserRepository, logger *zap.Logger
 }
 
 // Signup 注册
-func (userService *userService) Signup(ctx *gin.Context, user domain.User) error {
+func (userService *userService) Signup(ctx context.Context, user domain.User) error {
 	password := user.ValidatePassword()
 	email := user.ValidateEmail()
 	if !email {
@@ -74,7 +73,7 @@ func (userService *userService) Login(ctx context.Context, email string, passwor
 }
 
 // Edit 编辑
-func (userService *userService) Edit(ctx *gin.Context, user domain.User) error {
+func (userService *userService) Edit(ctx context.Context, user domain.User) error {
 	birthday := user.ValidateBirthday()
 	nickname := user.ValidateNickname()
 	aboutMe := user.ValidateAboutMe()
@@ -95,12 +94,12 @@ func (userService *userService) Edit(ctx *gin.Context, user domain.User) error {
 }
 
 // Profile 个人信息
-func (userService *userService) Profile(ctx *gin.Context, userId int64) (domain.User, error) {
+func (userService *userService) Profile(ctx context.Context, userId int64) (domain.User, error) {
 	return userService.userRepo.FindById(ctx, userId)
 }
 
 // LoginOrSignupByPhone 手机号登录或注册
-func (userService *userService) LoginOrSignupByPhone(ctx *gin.Context, phone string) (domain.User, error) {
+func (userService *userService) LoginOrSignupByPhone(ctx context.Context, phone string) (domain.User, error) {
 	byPhone, err := userService.userRepo.FindByPhone(ctx, phone)
 	if err != nil {
 		if err.Error() == ErrUserNotFound {
@@ -128,7 +127,7 @@ func (userService *userService) LoginOrSignupByPhone(ctx *gin.Context, phone str
 	return byPhone, nil
 }
 
-func (userService *userService) LoginOrSignupByWechat(ctx *gin.Context, wechatInfo domain.WechatInfo) (domain.User, error) {
+func (userService *userService) LoginOrSignupByWechat(ctx context.Context, wechatInfo domain.WechatInfo) (domain.User, error) {
 	we, err := userService.userRepo.FindByWechat(ctx, wechatInfo)
 	if err != nil {
 		if err.Error() == ErrUserNotFound {

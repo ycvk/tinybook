@@ -12,6 +12,13 @@ func InitLogger() *zap.Logger {
 	//if err != nil {
 	//	panic(err)
 	//}
+	//newConfig := prom.NewConfig()
+	//core, err := newConfig.Build()
+	//if err != nil {
+	//	panic(err)
+	//}
+	//l := zap.New(core)
+
 	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder // 配置日志级别颜色
 	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder        // 配置时间格式
 	logger := zap.New(zapcore.NewCore(

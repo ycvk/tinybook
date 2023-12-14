@@ -3,8 +3,10 @@ package middleware
 import (
 	"bytes"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	"io"
 	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -22,6 +24,13 @@ type AccessLog struct {
 	RespBody string `json:"resp_body"`
 	Duration string `json:"duration"`
 	Status   int    `json:"status"`
+}
+
+var vector *prometheus.CounterVec
+
+func InitCounter(opts prometheus.CounterOpts) {
+	vector = prometheus.NewCounterVec(opts, []string{"status"})
+	prometheus.MustRegister(vector)
 }
 
 func NewLogMiddleware(logFn func(ctx *gin.Context, accessLog *AccessLog)) *LogMiddlewareBuilder {
@@ -76,6 +85,7 @@ func (builder *LogMiddlewareBuilder) Build() gin.HandlerFunc {
 			if builder.logFn != nil {
 				builder.logFn(ctx, accessLog)
 			}
+			vector.WithLabelValues(strconv.Itoa(accessLog.Status)).Inc() //prometheus 记录状态码
 		}()
 		// 执行下一个中间件
 		ctx.Next()

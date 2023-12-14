@@ -8,9 +8,13 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"gorm.io/plugin/opentelemetry/tracing"
 	"gorm.io/plugin/prometheus"
 	"sync"
+	"time"
 )
+
+const filterPrometheus = "SHOW STATUS"
 
 var (
 	gormDB *gorm.DB
@@ -29,11 +33,12 @@ func InitDB(zipLog *zap.Logger) *gorm.DB {
 
 	once.Do(func() {
 		gormDB, err = gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{
-			Logger: logger.New(gormLoggerFunc(func(msg string, data ...interface{}) {
-				zipLog.Info(msg, zap.Any("data", data))
+			Logger: logger.New(gormLoggerFunc(func(msg string, data ...any) {
+				zipLog.Info(msg, zap.Any("gorm", data))
 			}), logger.Config{
-				SlowThreshold: 0,           // 慢查询阈值 0 表示打印所有sql
-				LogLevel:      logger.Info, // 日志级别
+				SlowThreshold: 200 * time.Millisecond, // 慢查询阈值 0 表示打印所有sql
+				LogLevel:      logger.Info,            // 日志级别
+				Colorful:      true,                   // 是否彩色打印
 			}),
 		})
 	})
@@ -73,6 +78,12 @@ func InitDB(zipLog *zap.Logger) *gorm.DB {
 	if err != nil {
 		panic(err)
 	}
+	// 注册链路追踪插件
+	err = gormDB.Use(tracing.NewPlugin(tracing.WithoutMetrics(), // 不收集prometheus指标
+		tracing.WithDBName("tinybook")))
+	if err != nil {
+		panic(err)
+	}
 	// TODO 为了方便测试，每次启动都会重新创建表 仅供测试使用
 	CreateTable(gormDB)
 	return gormDB
@@ -83,5 +94,8 @@ type gormLoggerFunc func(msg string, data ...interface{})
 
 // Printf 实现gorm日志接口
 func (f gormLoggerFunc) Printf(format string, args ...interface{}) {
+	if args[len(args)-1] == filterPrometheus {
+		return
+	}
 	f(format, args...)
 }
