@@ -2,11 +2,17 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"geek_homework/tinybook/ioc"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 	_ "github.com/spf13/viper/remote"
 	"net/http"
+	"os"
+	"os/exec"
+	"os/signal"
+	"strconv"
+	"syscall"
 	"time"
 )
 
@@ -31,6 +37,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	go exit() // 监听退出
 }
 
 func initPrometheus() {
@@ -58,4 +66,24 @@ func initViper() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// 监听退出
+func exit() {
+	sigs := make(chan os.Signal, 1)
+	done := make(chan bool, 1)
+	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		sig := <-sigs
+		fmt.Println()
+		fmt.Println(sig)
+		done <- true
+	}()
+	fmt.Println("监听退出信号，PID: ", os.Getpid())
+	<-done
+	fmt.Println("退出")
+	// 查杀
+	exec.Command("killall", "main", strconv.Itoa(os.Getpid())).Run()
+	// 自杀
+	exec.Command("kill", "-9", strconv.Itoa(os.Getpid())).Run()
 }

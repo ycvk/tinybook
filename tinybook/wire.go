@@ -41,7 +41,7 @@ func InitWebServer() *App {
 		ioc.InitWriter, article.NewKafkaArticleProducer,
 		article.NewKafkaConsumer, article.CollectConsumer,
 		// 初始化like rank kafka
-		interactive.NewKafkaLikeRankProducer, interactive.NewKafkaConsumer,
+		interactive.NewKafkaLikeRankProducer, interactive.NewKafkaLikeRankConsumer,
 
 		wire.Struct(new(App), "*"),
 	)

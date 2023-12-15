@@ -31,3 +31,11 @@ wrk -t10 -d3s -c20 -s profile.lua http://localhost/users/profile
 ```shell
 wrk -t10 -d3s -c20 -s rank.lua http://localhost:8081/articles/rank/10
 ```
+
+### like接口
+
+10个线程，持续3s，20个连接，每个连接每次发送1个请求
+
+```shell
+wrk -t2 -d30s -c8 -s like.lua http://localhost:8081/articles/like
+```

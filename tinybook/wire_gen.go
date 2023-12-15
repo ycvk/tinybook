@@ -60,7 +60,7 @@ func InitWebServer() *App {
 	articleHandler := web.NewArticleHandler(articleService, interactiveService, logger)
 	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler)
 	kafkaConsumer := article.NewKafkaConsumer(interactiveRepository, logger)
-	interactiveKafkaConsumer := interactive.NewKafkaConsumer(logger, theineCache, cmdable)
+	interactiveKafkaConsumer := interactive.NewKafkaLikeRankConsumer(logger, theineCache, cmdable)
 	v2 := article.CollectConsumer(kafkaConsumer, interactiveKafkaConsumer)
 	app := &App{
 		server:    engine,

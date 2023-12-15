@@ -2,7 +2,9 @@ package interactive
 
 import (
 	"context"
+	"geek_homework/tinybook/pkg/kafkax"
 	"github.com/bytedance/sonic"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -23,10 +25,12 @@ type KafkaLikeRankProducer struct {
 }
 
 func NewKafkaLikeRankProducer(writer *kafka.Writer) LikeRankEventProducer {
+	writerCollector := kafkax.NewWriterCollector(writer) // 用于收集 Kafka 生产者的统计信息
+	prometheus.MustRegister(writerCollector)             // 注册 Prometheus
 	return &KafkaLikeRankProducer{writer: writer}
 }
 
-func (k KafkaLikeRankProducer) ProduceLikeRankEvent(event LikeRankEvent) error {
+func (k *KafkaLikeRankProducer) ProduceLikeRankEvent(event LikeRankEvent) error {
 	bytes, err := sonic.Marshal(event)
 	if err != nil {
 		return err

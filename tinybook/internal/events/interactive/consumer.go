@@ -3,9 +3,11 @@ package interactive
 import (
 	"context"
 	"geek_homework/tinybook/internal/domain"
+	"geek_homework/tinybook/pkg/kafkax"
 	"github.com/Yiling-J/theine-go"
 	"github.com/bytedance/sonic"
 	"github.com/cockroachdb/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
 	"github.com/samber/lo"
 	"github.com/segmentio/kafka-go"
@@ -39,8 +41,10 @@ type KafkaConsumer struct {
 	isWaiting bool
 }
 
-func NewKafkaConsumer(log *zap.Logger, cli *theine.Cache[string, any], redisCli redis.Cmdable) *KafkaConsumer {
+func NewKafkaLikeRankConsumer(log *zap.Logger, cli *theine.Cache[string, any], redisCli redis.Cmdable) *KafkaConsumer {
 	reader := InitReader(GroupLikeRankRead, TopicInteractiveLikeRank)
+	collector := kafkax.NewReaderCollector(reader) // 用于收集 Kafka 读取器的统计信息
+	prometheus.MustRegister(collector)             // 注册 Prometheus
 	return &KafkaConsumer{
 		log:       log,
 		reader:    reader,
@@ -52,8 +56,8 @@ func NewKafkaConsumer(log *zap.Logger, cli *theine.Cache[string, any], redisCli 
 }
 
 func (k *KafkaConsumer) Start() {
+	ctx := context.Background()
 	go func() {
-		ctx := context.Background()
 		k.log.Info("like rank consumer start")
 		k.Consume(ctx) // 消费kafka消息
 	}()
@@ -67,13 +71,14 @@ func (k *KafkaConsumer) Start() {
 func (k *KafkaConsumer) Consume(ctx context.Context) {
 	defer func(reader *kafka.Reader) {
 		err := reader.Close()
+		k.log.Info("close kafka like rank consumer")
 		if err != nil {
 			k.log.Error("close kafka like rank consumer failed", zap.Error(err))
 		}
 	}(k.reader)
 	for {
 		// 读取消息
-		message, err := k.reader.ReadMessage(ctx)
+		message, err := k.reader.FetchMessage(ctx)
 		if err != nil {
 			k.log.Error("read message failed", zap.Error(err))
 			continue
@@ -87,8 +92,10 @@ func (k *KafkaConsumer) Consume(ctx context.Context) {
 		}
 		// 设置redis缓存更新标志位
 		if event.Change {
-			k.Call(func() { k.redisCli.Set(ctx, LikeRankLocalFlag, true, 0) }, TimeToCommitOffset)
+			k.Call(func() { k.redisCli.Set(ctx, LikeRankLocalFlag, 1, 0) }, TimeToCommitOffset)
 		}
+		// 提交offset
+		err = k.reader.CommitMessages(ctx, message)
 	}
 }
 
@@ -161,19 +168,19 @@ func (k *KafkaConsumer) Ticker(ctx context.Context, duration time.Duration) {
 // Call 执行函数，但保证在给定时间内最多执行一次
 func (k *KafkaConsumer) Call(f func(), duration time.Duration) {
 	k.mu.Lock()
-	defer k.mu.Unlock()
 
 	if k.isWaiting {
+		k.mu.Unlock()
 		return
 	}
 	k.isWaiting = true
+	k.mu.Unlock()
 
-	// 在另一个goroutine中执行函数
 	go func() {
 		f()
 		time.Sleep(duration)
 		k.mu.Lock()
-		defer k.mu.Unlock()
 		k.isWaiting = false
+		k.mu.Unlock()
 	}()
 }

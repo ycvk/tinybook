@@ -15,9 +15,11 @@ type PrometheusHook struct {
 }
 
 func NewPrometheusHook(opts prometheus.SummaryOpts) *PrometheusHook {
-	return &PrometheusHook{
+	p := &PrometheusHook{
 		vector: prometheus.NewSummaryVec(opts, []string{"cmd", "key_exist"}),
 	}
+	prometheus.MustRegister(p.vector)
+	return p
 }
 
 func (p *PrometheusHook) DialHook(next redis.DialHook) redis.DialHook {
@@ -32,7 +34,7 @@ func (p *PrometheusHook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 		var err error
 		defer func() {
 			duration := time.Since(start).Milliseconds()
-			keyExist := errors.Is(err, redis.Nil)
+			keyExist := !errors.Is(err, redis.Nil)
 			p.vector.WithLabelValues(cmd.Name(), strconv.FormatBool(keyExist)).Observe(float64(duration))
 		}()
 		err = next(ctx, cmd)
