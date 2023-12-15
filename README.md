@@ -4,19 +4,20 @@ Golang class homework in Geek Space.
 
 ## Table of Contents
 
-- [Week01: 实现切片的删除操作](#week01-实现切片的删除操作)
-- [Week02: 实现用户信息编辑功能](#week02-实现用户信息编辑功能)
-- [Week03: 部署方案修改](#week03-部署方案修改)
-- [Week04: 引入本地缓存](#week04-引入本地缓存)
-- [Week05: 同步转异步的容错机制](#week05-同步转异步的容错机制)
-- [Week06: 优化打印日志的部分](#week06-优化打印日志的部分)
-- [Week07: 找出点赞数量前N的数据](#week07-找出点赞数量前N的数据)
+- [Chapter01: 实现切片的删除操作](#chapter01-实现切片的删除操作)
+- [Chapter02: 实现用户信息编辑功能](#chapter02-实现用户信息编辑功能)
+- [Chapter03: 部署方案修改](#chapter03-部署方案修改)
+- [Chapter04: 引入本地缓存](#chapter04-引入本地缓存)
+- [Chapter05: 同步转异步的容错机制](#chapter05-同步转异步的容错机制)
+- [Chapter06: 优化打印日志的部分](#chapter06-优化打印日志的部分)
+- [Chapter07: 找出点赞数量前N的数据](#chapter07-找出点赞数量前N的数据)
+- [Chapter08: 为消息队列添加监控](#chapter08-为消息队列添加监控)
 
 ---
 
-<h2 id="Week01">Week01: 实现切片的删除操作</h2>
+<h2 id="Chapter01">Chapter01: 实现切片的删除操作</h2>
 
-[GitHub Link](https://github.com/ycvk/geek_homework/tree/main/week01)
+[GitHub Link](https://github.com/ycvk/geek_homework/tree/main/)
 
 ### 作业要求
 
@@ -27,7 +28,7 @@ Golang class homework in Geek Space.
 
 ---
 
-<h2 id="Week02">Week02: 实现用户信息编辑功能</h2>
+<h2 id="Chapter02">Chapter02: 实现用户信息编辑功能</h2>
 
 [GitHub Link](https://github.com/ycvk/geek_homework/tree/main/tinybook)
 
@@ -76,7 +77,7 @@ Golang class homework in Geek Space.
 
 ---
 
-<h2 id="Week03">Week03: 部署方案修改</h2>
+<h2 id="Chapter03">Chapter03: 部署方案修改</h2>
 
 [GitHub Link](https://github.com/ycvk/geek_homework)
 
@@ -118,9 +119,9 @@ Golang class homework in Geek Space.
 
 ---
 
-<h2 id="Week04">Week04: 引入本地缓存</h2>
+<h2 id="Chapter04">Chapter04: 引入本地缓存</h2>
 
-[GitHub Link](https://github.com/ycvk/geek_homework/tree/week04)
+[GitHub Link](https://github.com/ycvk/geek_homework/)
 
 ### 作业要求
 
@@ -203,7 +204,7 @@ Golang class homework in Geek Space.
 
 ---
 
-<h2 id="Week05">Week05: 同步转异步的容错机制</h2>
+<h2 id="Chapter05">Chapter05: 同步转异步的容错机制</h2>
 
 [GitHub Link](https://github.com/ycvk/geek_homework/tree/main/week05)
 
@@ -440,7 +441,7 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 
 ---
 
-<h2 id="Week06">Week06: 优化打印日志的部分</h2>
+<h2 id="Chapter06">Chapter06: 优化打印日志的部分</h2>
 
 [GitHub Link](https://github.com/ycvk/geek_homework/blob/week06/tinybook/internal/web/middleware/error.go)
 
@@ -504,7 +505,7 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 
 ---
 
-<h2 id="Week07">Week07: 找出点赞数量前N的数据</h2>
+<h2 id="Chapter07">Chapter07: 找出点赞数量前N的数据</h2>
 
 [GitHub Link](https://github.com/ycvk/geek_homework/tree/week07)
 
@@ -632,3 +633,100 @@ QPS为8151.66，比没有缓存时提高了5倍多。且没有任何错误。
 直接请求数据库时，可以看到后面的请求响应时间都是timeout，错误率超过50%，比走redis慢了4倍，比走本地缓存慢了5倍多。
 
 ---
+
+<h2 id="Chapter08">Chapter08: 为消息队列添加监控</h2>
+
+[GitHub Link](https://github.com/ycvk/geek_homework/tree/dev8)
+
+### 背景要求
+
+#### 为了在 Kafka 中实现 Prometheus 监控，需要定义一系列指标来监控 Kafka 生产者和消费者的性能和健康状况。
+
+#### 下面是一些关键指标的详细解释，包括为什么选择这些指标，以及如何基于这些指标设置告警
+
+### 指标解释
+
+#### 1. 生产者的指标
+
+- **消息发送速率：** 每秒发送的消息数量。这个指标可以用来监控生产者的性能。如果消息发送速率低于预期，可能是生产者的性能出现了问题。
+- **消息发送延迟：** 消息从发送到被broker确认的时间。这个指标可以用来监控生产者的性能。如果消息发送延迟高于预期，长时间延迟可能是网络问题或Kafka集群过载的迹象。
+- **消息发送失败率：** 消息发送失败的比例。这个指标可以用来监控生产者的健康状况。如果消息发送失败率高于预期，可能是生产者的健康状况出现了问题。
+- **消息发送失败数：** 消息发送失败的数量。这个指标可以用来监控生产者的健康状况。如果消息发送失败数高于预期，可能是生产者的健康状况出现了问题。
+- **消息发送重试数：** 消息发送失败后的重试次数。这个指标可以用来监控生产者的健康状况。如果消息发送重试数高于预期，可能是生产者的健康状况出现了问题。
+- **发送消息的大小：** 每条消息的大小。这个指标可以用来监控生产者的性能。如果消息的大小高于预期，大消息可能导致网络拥堵和延迟增加。
+
+#### 2. 消费者的指标
+
+- **消息消费速率：** 每秒消费的消息数量。这个指标可以用来监控消费者的性能。如果消息消费速率低于预期，可能是消费者的性能出现了问题。
+- **消息消费延迟：** 消息从 Kafka 消费到消费者的延迟。这个指标可以用来监控消费者的性能。如果消息消费延迟高于预期，可能是消费者的性能出现了问题。
+- **消息消费失败率：** 消息消费失败的比例。这个指标可以用来监控消费者的健康状况。如果消息消费失败率高于预期，可能是消费者的健康状况出现了问题。
+- **消费者群组偏移量：** 大的偏移量滞后可能意味着消费者跟不上生产者的速度。
+
+### 指标告警
+
+#### 1. 生产者的告警
+
+- **消息发送失败率：** 如果消息发送失败率高于预期，触发告警。
+- **消息发送失败数：** 如果消息发送失败数高于预期，触发告警。
+- **消息大小：** 如果平均消息大小超过预设阈值，触发告警。
+- **消息发送延迟：** 长时间延迟可能是网络问题或Kafka集群过载，如果延迟超过设定阈值，触发告警。
+
+#### 2. 消费者的告警
+
+- **消息消费失败率：** 如果消息消费失败率高于预期，触发告警。
+- **消息消费延迟：** 长时间消费延迟可能意味着消费者处理能力不足，如果延迟超过预设阈值，触发告警。
+- **消费者群组偏移量：** 大的偏移量滞后可能意味着消费者跟不上生产者的速度，如果滞后量超过预设阈值，触发告警。
+
+### 代码实现
+
+#### 1. 生产者的Prometheus监控
+
+- 由于上一章节我使用的是`kafka-go`库，该库的生产者`Writer.Stats()`带有当前`writer`的几乎所有统计信息，包括发送失败数、发送重试数、发送消息大小等等。
+
+
+- 因此，我直接使用`Writer.Stats()`来获取生产者的指标。
+
+
+- 由于此次需求是为了在 Kafka 中实现 Prometheus 监控，因此我在`pkg/kafkax/`目录下，对kafka的`writer`
+  进行监控封装，并实现了`prometheus.Collector`
+  接口，从而可以直接将其注册到 Prometheus 中，做到即插即用。
+
+
+- 以下是代码实现：
+    - [writer_collector](https://github.com/ycvk/geek_homework/blob/dev8/tinybook/pkg/kafkax/prometheus_writer.go) :
+      实现了`prometheus.Collector`接口，用于将生产者的指标注册到 Prometheus 中。
+    - [producer](https://github.com/ycvk/geek_homework/blame/dev8/tinybook/internal/events/interactive/producer.go#L28-L29) :
+      在 new 生产者的所有代码中都添加共两行代码，对生产者`writer`进行监控封装，并注册到Prometheus中。
+
+#### 2. 消费者的Prometheus监控
+
+- 同样的，该库的消费者`Reader.Stats()`带有当前`reader`的几乎所有统计信息，包括消费失败数、消费延迟、消费速率等等。
+
+
+- **注意！！！！！ 这里的代码我为了演示**，将消费者的**所有指标**都注册到了 Prometheus 中，但是实际使用中，可以根据需求，只注册需要的指标。
+
+
+- 以下是代码实现：
+    - [reader_collector](https://github.com/ycvk/geek_homework/blob/dev8/tinybook/pkg/kafkax/prometheus_reader.go) :
+      实现了`prometheus.Collector`接口，用于将消费者的指标注册到 Prometheus 中。
+    - [consumer](https://github.com/ycvk/geek_homework/blame/dev8/tinybook/internal/events/interactive/consumer.go#L46-L47) :
+      在 new 消费者的所有代码中都添加共两行代码，对消费者`reader`进行监控封装，并注册到Prometheus中。
+
+### 监控
+
+#### 一旦我们通过Prometheus捕获了Kafka的所有关键性能指标，就可以在Grafana上把这些数据变成直观、易懂的图表。
+
+1. **连接Prometheus：**
+    - 确保Grafana能从Prometheus中读取数据。在Grafana的设置中，把Prometheus设为主数据源。
+
+2. **搭建Kafka仪表板：**
+    - 在Grafana中新建一个专门的仪表板，专注于展示Kafka的运行状况。
+    - 每个关键指标，比如生产者的消息发送速率或消费者的消费延迟，都应该有自己的小面板。
+
+3. **面板的配置：**
+    - 可以使用PromQL，为每个指标配置适当的查询命令。比如，要获取消息发送速率，就写一个专门的PromQL查询。
+
+    - 为每种指标选择适合的展示方式。比如，时间序列图非常适合展示发送速率这种随时间变化的数据。
+
+4. **告警设置：**
+    - 在Grafana里，针对每个关键指标设置告警。假如消息发送失败率超过了某个界限，系统就会自动通知。
