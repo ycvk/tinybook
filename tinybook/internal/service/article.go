@@ -18,12 +18,17 @@ type ArticleService interface {
 	GetArticlesByAuthor(ctx context.Context, uid int64, limit int, offset int) ([]domain.ArticleVo, error)
 	GetArticleById(ctx context.Context, id int64) (domain.ArticleVo, error)
 	GetPubArticleById(ctx context.Context, id int64, uid int64) (domain.ArticleVo, error)
+	ListPub(ctx context.Context, time time.Time, limit int, offset int) ([]domain.Article, error)
 }
 
 type articleService struct {
 	repo     repository.ArticleRepository
 	producer article.ReadEventProducer
 	log      *zap.Logger
+}
+
+func (a *articleService) ListPub(ctx context.Context, time time.Time, limit int, offset int) ([]domain.Article, error) {
+	return a.repo.ListPub(ctx, time, limit, offset)
 }
 
 func (a *articleService) GetPubArticleById(ctx context.Context, id int64, uid int64) (domain.ArticleVo, error) {

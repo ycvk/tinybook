@@ -18,6 +18,7 @@ type InteractiveService interface {
 	Collect(ctx context.Context, biz string, id int64, cid int64, uid int64) error
 	GetInteractive(ctx context.Context, biz string, id int64, uid int64) (domain.Interactive, error)
 	GetLikeRanks(ctx context.Context, biz string, num int64) ([]domain.ArticleVo, error)
+	GetByIds(ctx context.Context, biz string, ids []int64) (map[int64]domain.Interactive, error)
 }
 
 type interactiveService struct {
@@ -25,6 +26,18 @@ type interactiveService struct {
 	articleRepo   repository.ArticleRepository
 	likeRankEvent interactive.LikeRankEventProducer
 	log           *zap.Logger
+}
+
+func (i *interactiveService) GetByIds(ctx context.Context, biz string, ids []int64) (map[int64]domain.Interactive, error) {
+	interactives, err := i.repo.GetByIds(ctx, biz, ids)
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[int64]domain.Interactive, len(interactives))
+	for _, item := range interactives {
+		m[item.BizId] = item
+	}
+	return m, nil
 }
 
 func (i *interactiveService) GetLikeRanks(ctx context.Context, biz string, num int64) ([]domain.ArticleVo, error) {

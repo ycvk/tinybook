@@ -539,7 +539,13 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 
 
 - 关于使用kafka：我使用的是`kafka-go`库，可以通过设置`CommitInterval`来控制消费者的消费频率。
-  这样配合定时器，可以控制消费者每隔一段时间才消费这时间段的所有消息，配合锁可以保证此时间段内只向redis请求一次，避免消费者消费过快，造成redis压力过大。
+
+
+- 为什么选择kafka-go而不是sarama？see
+  this : [Go社区主流Kafka客户端简要对比](https://tonybai.com/2022/03/28/the-comparison-of-the-go-community-leading-kakfa-clients/)
+
+
+- 这样配合定时器，可以控制消费者每隔一段时间才消费这时间段的所有消息，配合锁可以保证此时间段内只向redis请求一次，避免消费者消费过快，造成redis压力过大。
 
 ### 业务折中
 

@@ -127,6 +127,8 @@ func (k *KafkaConsumer) Ticker(ctx context.Context, duration time.Duration) {
 	defer ticker.Stop()
 	for {
 		select {
+		case <-ctx.Done():
+			goto tickerEnd
 		case <-ticker.C:
 			// 每固定时间检查一次本地缓存是否需要更新
 			change, err := k.redisCli.Get(ctx, LikeRankLocalFlag).Bool()
@@ -163,6 +165,9 @@ func (k *KafkaConsumer) Ticker(ctx context.Context, duration time.Duration) {
 			}
 		}
 	}
+tickerEnd:
+	k.log.Info("consumer ticker end")
+	return
 }
 
 // Call 执行函数，但保证在给定时间内最多执行一次

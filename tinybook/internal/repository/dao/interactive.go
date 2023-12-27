@@ -50,6 +50,7 @@ type InteractiveDAO interface {
 	IsLiked(ctx context.Context, biz string, id int64, uid int64) (bool, error)
 	IsCollected(ctx context.Context, biz string, id int64, uid int64) (bool, error)
 	SelectTopNLike(ctx context.Context, biz string, num int64) ([]Interactive, error)
+	GetInteractiveByIds(ctx context.Context, biz string, ids []int64) ([]Interactive, error)
 }
 
 type GormInteractiveDAO struct {
@@ -58,6 +59,14 @@ type GormInteractiveDAO struct {
 
 func NewGormInteractiveDAO(db *gorm.DB) InteractiveDAO {
 	return &GormInteractiveDAO{db: db}
+}
+
+func (g *GormInteractiveDAO) GetInteractiveByIds(ctx context.Context, biz string, ids []int64) ([]Interactive, error) {
+	var interactives []Interactive
+	err := g.db.WithContext(ctx).Model(&Interactive{}).
+		Where("biz = ? and biz_id in ?", biz, ids).
+		Find(&interactives).Error
+	return interactives, err
 }
 
 func (g *GormInteractiveDAO) SelectTopNLike(ctx context.Context, biz string, num int64) ([]Interactive, error) {

@@ -20,6 +20,7 @@ type InteractiveRepository interface {
 	Liked(ctx context.Context, biz string, id int64, uid int64) (bool, error)
 	Collected(ctx context.Context, biz string, id int64, uid int64) (bool, error)
 	GetLikeRanks(ctx context.Context, biz string, num int64) ([]domain.Interactive, error)
+	GetByIds(ctx context.Context, biz string, ids []int64) ([]domain.Interactive, error)
 }
 
 type CachedInteractiveRepository struct {
@@ -30,6 +31,16 @@ type CachedInteractiveRepository struct {
 
 func NewCachedInteractiveRepository(dao dao.InteractiveDAO, cache cache.InteractiveCache, logger *zap.Logger) InteractiveRepository {
 	return &CachedInteractiveRepository{dao: dao, cache: cache, log: logger}
+}
+
+func (c *CachedInteractiveRepository) GetByIds(ctx context.Context, biz string, ids []int64) ([]domain.Interactive, error) {
+	interactiveList, err := c.dao.GetInteractiveByIds(ctx, biz, ids)
+	if err != nil {
+		return nil, err
+	}
+	return lo.Map(interactiveList, func(item dao.Interactive, index int) domain.Interactive {
+		return c.daoToDomain(item)
+	}), nil
 }
 
 func (c *CachedInteractiveRepository) GetLikeRanks(ctx context.Context, biz string, num int64) ([]domain.Interactive, error) {
