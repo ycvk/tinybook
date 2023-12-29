@@ -26,7 +26,9 @@ require (
 	github.com/prometheus/client_golang v1.17.0
 	github.com/qiniu/qmgo v1.1.8
 	github.com/redis/go-redis/v9 v9.2.1
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/samber/lo v1.38.1
+	github.com/sashabaranov/go-openai v1.17.9
 	github.com/segmentio/kafka-go v0.4.46
 	github.com/spf13/viper v1.17.0
 	github.com/stretchr/testify v1.8.4

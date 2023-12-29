@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"geek_homework/tinybook/internal/domain"
+	"geek_homework/tinybook/internal/repository"
 	"geek_homework/tinybook/pkg/priorityqueue"
 	"github.com/samber/lo"
 	"math"
@@ -19,15 +20,17 @@ type BatchRankingService struct {
 	BatchSize      int // 每次获取的文章数量
 	topNum         int // 排行榜数量
 	ScoreFunc      func(likeCount int64, utime time.Time) float64
-	queue          *priorityqueue.PriorityQueue[domain.Article, float64]
+	queue          *priorityqueue.PriorityQueue[domain.Article, float64] // 优先队列
+	rankingRepo    repository.RankingRepository
 }
 
-func NewBatchRankingService(interactiveSvc InteractiveService, articleSvc ArticleService) RankingService {
+func NewBatchRankingService(interactiveSvc InteractiveService, articleSvc ArticleService, repo repository.RankingRepository) RankingService {
 	return &BatchRankingService{
 		InteractiveSvc: interactiveSvc,
 		ArticleSvc:     articleSvc,
 		BatchSize:      1000,
 		topNum:         100,
+		rankingRepo:    repo,
 		ScoreFunc: func(likeCount int64, utime time.Time) float64 {
 			return float64(likeCount-1) / math.Pow(time.Now().Sub(utime).Seconds()+2, 1.8)
 		},
@@ -36,7 +39,12 @@ func NewBatchRankingService(interactiveSvc InteractiveService, articleSvc Articl
 }
 
 func (b *BatchRankingService) TopN(ctx context.Context) error {
-	panic("implement me")
+	topN, err := b.topN(ctx)
+	if err != nil {
+		return err
+	}
+	// 放到缓存中
+	return b.rankingRepo.ReplaceTopN(ctx, topN)
 }
 
 func (b *BatchRankingService) topN(ctx context.Context) ([]domain.Article, error) {

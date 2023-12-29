@@ -29,15 +29,26 @@ func main() {
 		defer cancelFunc()
 		otel(timeout) // 服务器关闭时, 超时控制去关闭otel
 	}()
-	app := InitWebServer()         // 初始化web服务
-	for i := range app.consumers { // 启动kafka消费者
-		app.consumers[i].Start()
-	}
-	err := app.server.Run(":8081") // 启动web服务
+
+	app := InitWebServer() // 初始化web服务
+
+	// 启动web服务
+	err := app.server.Run(":8081")
 	if err != nil {
 		panic(err)
 	}
 
+	// 启动kafka消费者
+	for i := range app.consumers {
+		app.consumers[i].Start()
+	}
+
+	// 启动定时任务
+	app.cron.Start()
+	defer func() {
+		// 等待退出
+		<-app.cron.Stop().Done()
+	}()
 	go exit() // 监听退出
 }
 

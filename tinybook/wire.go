@@ -15,6 +15,21 @@ import (
 	"github.com/google/wire"
 )
 
+// 热榜服务
+var rankingServiceProvider = wire.NewSet(
+	cache.NewRedisRankingCache,
+	repository.NewCachedRankingRepository,
+	service.NewBatchRankingService,
+)
+
+// interactive 互动服务
+var interactiveServiceProvider = wire.NewSet(
+	cache.NewRedisInteractiveCache,
+	dao.NewGormInteractiveDAO,
+	repository.NewCachedInteractiveRepository,
+	service.NewInteractiveService,
+)
+
 func InitWebServer() *App {
 
 	wire.Build(
@@ -29,18 +44,20 @@ func InitWebServer() *App {
 		// 初始化article模块
 		repository.NewCachedArticleRepository, dao.NewMongoDBArticleDAO, service.NewArticleService, cache.NewRedisArticleCache,
 		// 初始化interactive模块
-		cache.NewRedisInteractiveCache, repository.NewCachedInteractiveRepository, dao.NewGormInteractiveDAO, service.NewInteractiveService,
+		interactiveServiceProvider,
 		// 初始化oauth2模块
 		ioc.InitWechatService,
+		// 初始化ranking模块
+		rankingServiceProvider, ioc.InitJobs, ioc.InitRankingJob,
 		// 初始化handler
 		web.NewUserHandler, web.NewOAuth2WechatHandler, jwt.NewRedisJWTHandler,
 		web.NewArticleHandler,
 		// 初始化web 和 中间件
 		ioc.InitWebServer, ioc.InitHandlerFunc, ioc.InitLogger,
-		// 初始化read num kafka
+		// 初始化阅读数 read num kafka
 		ioc.InitWriter, article.NewKafkaArticleProducer,
 		article.NewKafkaConsumer, article.CollectConsumer,
-		// 初始化like rank kafka
+		// 初始化点赞榜 like rank kafka
 		interactive.NewKafkaLikeRankProducer, interactive.NewKafkaLikeRankConsumer,
 
 		wire.Struct(new(App), "*"),

@@ -16,6 +16,7 @@ import (
 	"geek_homework/tinybook/internal/web"
 	"geek_homework/tinybook/internal/web/jwt"
 	"geek_homework/tinybook/ioc"
+	"github.com/google/wire"
 )
 
 import (
@@ -62,9 +63,23 @@ func InitWebServer() *App {
 	kafkaConsumer := article.NewKafkaConsumer(interactiveRepository, logger)
 	interactiveKafkaConsumer := interactive.NewKafkaLikeRankConsumer(logger, theineCache, cmdable)
 	v2 := article.CollectConsumer(kafkaConsumer, interactiveKafkaConsumer)
+	rankingCache := cache.NewRedisRankingCache(cmdable)
+	rankingRepository := repository.NewCachedRankingRepository(rankingCache)
+	rankingService := service.NewBatchRankingService(interactiveService, articleService, rankingRepository)
+	rankingJob := ioc.InitRankingJob(rankingService)
+	cron := ioc.InitJobs(logger, rankingJob)
 	app := &App{
 		server:    engine,
 		consumers: v2,
+		cron:      cron,
 	}
 	return app
 }
+
+// wire.go:
+
+// 热榜服务
+var rankingServiceProvider = wire.NewSet(cache.NewRedisRankingCache, repository.NewCachedRankingRepository, service.NewBatchRankingService)
+
+// interactive 互动服务
+var interactiveServiceProvider = wire.NewSet(cache.NewRedisInteractiveCache, dao.NewGormInteractiveDAO, repository.NewCachedInteractiveRepository, service.NewInteractiveService)
