@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"geek_homework/tinybook/ioc"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -32,12 +33,6 @@ func main() {
 
 	app := InitWebServer() // 初始化web服务
 
-	// 启动web服务
-	err := app.server.Run(":8081")
-	if err != nil {
-		panic(err)
-	}
-
 	// 启动kafka消费者
 	for i := range app.consumers {
 		app.consumers[i].Start()
@@ -49,7 +44,20 @@ func main() {
 		// 等待退出
 		<-app.cron.Stop().Done()
 	}()
-	go exit() // 监听退出
+
+	// 启动web服务
+	server := &http.Server{
+		Addr:    ":8081",
+		Handler: app.server,
+	}
+	go func() {
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			fmt.Println("web服务启动失败: ", err)
+		}
+	}()
+
+	// 监听项目退出
+	exit(server)
 }
 
 func initPrometheus() {
@@ -80,19 +88,25 @@ func initViper() {
 }
 
 // 监听退出
-func exit() {
+func exit(engine *http.Server) {
 	sigs := make(chan os.Signal, 1)
-	done := make(chan bool, 1)
+	quit := make(chan bool, 1)
+
 	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	go func() {
 		sig := <-sigs
-		fmt.Println()
-		fmt.Println(sig)
-		done <- true
+		fmt.Println("收到退出信号: ", sig)
+		// 退出web服务
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := engine.Shutdown(ctx); err != nil {
+			fmt.Println("web服务退出失败: ", err)
+		}
+		quit <- true
 	}()
-	fmt.Println("监听退出信号，PID: ", os.Getpid())
-	<-done
-	fmt.Println("退出")
+	<-quit
+	fmt.Println("服务 PID 为: ", os.Getpid())
+	fmt.Println("服务已退出")
 	// 查杀
 	exec.Command("killall", "main", strconv.Itoa(os.Getpid())).Run()
 	// 自杀

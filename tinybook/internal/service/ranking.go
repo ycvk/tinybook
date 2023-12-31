@@ -12,6 +12,7 @@ import (
 
 type RankingService interface {
 	TopN(ctx context.Context) error
+	GetTopN(ctx context.Context) ([]domain.Article, error)
 }
 
 type BatchRankingService struct {
@@ -22,6 +23,10 @@ type BatchRankingService struct {
 	ScoreFunc      func(likeCount int64, utime time.Time) float64
 	queue          *priorityqueue.PriorityQueue[domain.Article, float64] // 优先队列
 	rankingRepo    repository.RankingRepository
+}
+
+func (b *BatchRankingService) GetTopN(ctx context.Context) ([]domain.Article, error) {
+	return b.rankingRepo.GetTopN(ctx)
 }
 
 func NewBatchRankingService(interactiveSvc InteractiveService, articleSvc ArticleService, repo repository.RankingRepository) RankingService {

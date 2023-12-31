@@ -2,6 +2,7 @@ package ioc
 
 import (
 	"geek_homework/tinybook/pkg/redisx"
+	"github.com/bsm/redislock"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
@@ -36,8 +37,13 @@ func InitRedis() redis.Cmdable {
 			Addr: cfg.Addr,
 		})
 		newClient.AddHook(hook)
+
 		redisClient = newClient
 	})
-
 	return redisClient
+}
+
+func InitRedisLock(cmd redis.Cmdable) *redislock.Client {
+	c := redislock.New(cmd)
+	return c
 }

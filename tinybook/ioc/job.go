@@ -3,14 +3,15 @@ package ioc
 import (
 	"geek_homework/tinybook/internal/job"
 	"geek_homework/tinybook/internal/service"
+	"github.com/bsm/redislock"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 	"time"
 )
 
-func InitRankingJob(svc service.RankingService) *job.RankingJob {
-	return job.NewRankingJob(svc, time.Second*30)
+func InitRankingJob(svc service.RankingService, client *redislock.Client, logger *zap.Logger) *job.RankingJob {
+	return job.NewRankingJob(svc, time.Second*30, client, logger)
 }
 
 func InitJobs(log *zap.Logger, rankJob *job.RankingJob) *cron.Cron {
@@ -28,7 +29,7 @@ func InitJobs(log *zap.Logger, rankJob *job.RankingJob) *cron.Cron {
 		},
 	})
 	c := cron.New(cron.WithSeconds())
-	_, err := c.AddJob("@every 1m", builder.Build(rankJob))
+	_, err := c.AddJob("@every 60m", builder.Build(rankJob)) //添加ranking job
 	if err != nil {
 		panic(err)
 	}

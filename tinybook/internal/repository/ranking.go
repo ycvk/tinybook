@@ -8,6 +8,7 @@ import (
 
 type RankingRepository interface {
 	ReplaceTopN(ctx context.Context, topN []domain.Article) error
+	GetTopN(ctx context.Context) ([]domain.Article, error)
 }
 
 type CachedRankingRepository struct {
@@ -16,6 +17,10 @@ type CachedRankingRepository struct {
 
 func NewCachedRankingRepository(cache cache.RankingCache) RankingRepository {
 	return &CachedRankingRepository{cache: cache}
+}
+
+func (c *CachedRankingRepository) GetTopN(ctx context.Context) ([]domain.Article, error) {
+	return c.cache.Get(ctx)
 }
 
 func (c *CachedRankingRepository) ReplaceTopN(ctx context.Context, topN []domain.Article) error {

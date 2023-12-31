@@ -35,6 +35,8 @@ func InitWebServer() *App {
 	wire.Build(
 		// 初始化redis, db, localCache, mongoDB
 		ioc.InitRedis, ioc.InitDB, ioc.InitLocalCache, ioc.InitMongoDB, ioc.InitMongoDBV2,
+		// 初始化redisLock
+		ioc.InitRedisLock,
 		// 初始化user模块
 		cache.NewRedisUserCache, dao.NewGormUserDAO, repository.NewCachedUserRepository, service.NewUserService,
 		// 初始化code模块
