@@ -1,7 +1,6 @@
 package ioc
 
 import (
-	"geek_homework/tinybook/config"
 	"geek_homework/tinybook/internal/web"
 	"geek_homework/tinybook/internal/web/jwt"
 	"geek_homework/tinybook/internal/web/middleware"
@@ -12,18 +11,22 @@ import (
 	redisSession "github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"strings"
 	"time"
 )
 
-func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler, wechatHandler *web.OAuth2WechatHandler) *gin.Engine {
+func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler,
+	wechatHandler *web.OAuth2WechatHandler, articleHandler *web.ArticleHandler) *gin.Engine {
 	engine := gin.Default()
 	// 注册中间件
 	engine.Use(handlerFunc...)
 	// 注册用户路由
 	userHandler.RegisterRoutes(engine)
-	// 注册oauth2路由
+	// 注册文章路由
+	articleHandler.RegisterRoutes(engine)
+	// 注册wechat oauth2路由
 	wechatHandler.RegisterRoutes(engine)
 	return engine
 }
@@ -32,10 +35,11 @@ func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler, 
 func InitHandlerFunc(redisClient redis.Cmdable, handler jwt.Handler, logger *zap.Logger) []gin.HandlerFunc {
 	corsConfig := initCorsConfig()          // 跨域配置
 	rateLimit := initRateLimit(redisClient) // 限流器
-	log := initLogger(logger)               // 日志
+	log := initLogger(logger)               // 日志 todo 本地开发时，可以注释掉
 	errorLog := initErrorLog(logger)        // 错误日志
 	loginJWT := initLoginJWT(handler)       // 登录jwt
 	return []gin.HandlerFunc{corsConfig, rateLimit, log, errorLog, loginJWT}
+	//return []gin.HandlerFunc{corsConfig, log, errorLog, loginJWT}
 }
 
 // initCorsConfig 跨域配置
@@ -76,10 +80,18 @@ func initRateLimit(redisClient redis.Cmdable) gin.HandlerFunc {
 
 // initLoginSession 初始化登录session
 func initLoginSession(engine *gin.Engine) {
+	type Config struct {
+		Host string `yaml:"addr"`
+	}
+	var cfg Config
+	err2 := viper.UnmarshalKey("redis", &cfg)
+	if err2 != nil {
+		panic(err2)
+	}
 	loginMiddleware := middleware.LoginMiddlewareBuilder{}
 	store, err := redisSession.NewStore(16,
 		"tcp",
-		config.Config.Redis.Host,
+		cfg.Host,
 		"",
 		[]byte("zcPbUOs7zYO1ky2WgE14chotKwcp95Hp"), //authentication key 身份验证密钥
 		[]byte("GdGvU8pRs439iNREpNtl1gZhY7jU8zRt"), //encryption key 加密密钥

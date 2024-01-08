@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tinybook-mongodb
+  labels:
+    app: tinybook-mongodb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tinybook-mongodb
+  template:
+    metadata:
+      name: tinybook-mongodb
+      labels:
+        app: tinybook-mongodb
+    spec:
+      containers:
+        - name: tinybook-mongodb
+          image: mongo:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: root
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: "123456"
+          ports:
+            - name: mongodb
+              containerPort: 27017
+      restartPolicy: Always

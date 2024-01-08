@@ -10,6 +10,7 @@ Golang class homework in Geek Space.
 - [Week04: 引入本地缓存](#week04-引入本地缓存)
 - [Week05: 同步转异步的容错机制](#week05-同步转异步的容错机制)
 - [Week06: 优化打印日志的部分](#week06-优化打印日志的部分)
+- [Week07: 找出点赞数量前N的数据](#week07-找出点赞数量前N的数据)
 
 ---
 
@@ -439,7 +440,7 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 
 ---
 
-<h2 id="Week06"> Week06: 优化打印日志的部分</h2>
+<h2 id="Week06">Week06: 优化打印日志的部分</h2>
 
 [GitHub Link](https://github.com/ycvk/geek_homework/blob/week06/tinybook/internal/web/middleware/error.go)
 
@@ -500,5 +501,134 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 - 集中管理：你可以在一个地方集中处理所有的错误日志记录，而不需要在每个处理函数中重复相同的逻辑。
 - 灵活性：你可以轻松地调整错误处理和日志记录的策略，而无需修改大量的处理函数。
 - 代码清洁：这使得处理函数更加专注于它们的主要职责，从而使代码更加清晰和易于理解。
+
+---
+
+<h2 id="Week07">Week07: 找出点赞数量前N的数据</h2>
+
+[GitHub Link](https://github.com/ycvk/geek_homework/tree/week07)
+
+### 作业要求
+
+本次的核心是设计一个能够找出按照点赞数量前 N 个数据的高性能方案。方案应考虑以下要点：
+
+1. 综合缓存利用：整合 Redis 和本地缓存的使用，确保方案在面试中具有吸引力和竞争力。
+2. 业务折中：清晰阐述任何业务上的折中和权衡。
+3. 自主设计：独立设计解决方案，遵循自主搜索和讨论的原则。
+
+### 设计思路
+
+- Redis ZSet：使用 Redis 的 ZSet 数据结构来存储和更新文章点赞数。例如，通过命令 `zincrby article:like_count 1 id`
+  更新点赞数，并使用 `ZRevRange` 获取指定排名数据。
+
+
+- 本地缓存与 Kafka 结合：采用 `theine-go` 高性能本地缓存，结合 Kafka 消息队列。
+  在点赞或取消点赞时，发送消息到 Kafka。消费者接收消息后，每固定时间，向redis缓存中设置或更新一个布尔型键值，表示排行榜数据的变化。
+
+
+- 定时器同步机制：设置可调节的定时器，周期性检查redis缓存中的布尔键。如键存在，则表明排行榜数据有变化，触发本地缓存从 Redis
+  拉取最新数据，拉取后重置该键。
+
+
+- 控制获取排行榜的TopN数量：控制只获取最多排行榜前N个数据，避免数据量过大。也避免了非法请求 N 过大，造成获取数据量过大的情况。
+
+
+- 关于更新本地缓存的key：这里使用redis来存储并更新此key，而不是使用本地缓存。
+  因为k8s项目中使用的是多pod实例部署，如果使用本地缓存来存储此key，那么每个pod都会有一份此key，无法保证key唯一，会导致数据不一致。
+
+
+- 关于使用kafka：我使用的是`kafka-go`库，可以通过设置`CommitInterval`来控制消费者的消费频率。
+  这样配合定时器，可以控制消费者每隔一段时间才消费这时间段的所有消息，配合锁可以保证此时间段内只向redis请求一次，避免消费者消费过快，造成redis压力过大。
+
+### 业务折中
+
+- **Redis ZSet 与本地缓存的折中：** 由于 Redis ZSet 本身就是一个有序集合，可以直接使用 ZSet 来存储排行榜数据。但是，如果每次请求都直接从
+  Redis
+  拉取数据，会导致 Redis 压力过大。因此，可以使用本地缓存来缓存排行榜数据，减轻 Redis 压力。但是，本地缓存的数据可能会与 Redis
+  中的数据不一致，因此需要定时器同步机制来保证数据的一致性。
+
+
+- **实时缓存 与 定时缓存 的折中：**
+    - 由于本地缓存是一个内存缓存，如果每次点赞或取消点赞都直接更新本地缓存，很可能会导致缓存数据与 Redis
+      中的数据不一致。
+    - 但如果每次点赞或取消点赞都直接获取 Redis 中的数据，再更新本地缓存，那跟直接从 Redis 拉取数据有什么区别呢？
+    - 因此，可以使用 Kafka 消息队列来解耦点赞和取消点赞的操作。当点赞或取消点赞时，发送消息到
+      Kafka。消费者接收消息后，在一个可设置的时间段内，只会向redis缓存中设置或更新一次布尔型键值，表示排行榜数据的变化。
+    - 如果每次点赞或取消点赞都直接更新本地缓存，那么 Kafka 消息队列的作用就只是解耦了点赞和取消点赞的操作，而没有减轻本地缓存的压力。
+    - 因此，可以设置一个定时器，周期性检查redis缓存中的布尔键。如键存在，则表明排行榜数据有变化，触发本地缓存从 Redis
+      拉取最新数据，拉取后重置该键。
+    - 以上这样，就可以减轻缓存的压力，又能保证数据的最终一致性。
+    - 但是，这样做也有一个缺点，就是可能会导致数据的实时性降低。因为如果定时器的周期设置得太长，那么可能会有一段时间内，本地缓存中的数据是旧的。
+      因此，需要在实际使用中，根据实际情况来调节定时器的周期。
+
+### 接口调用流程
+
+1. 用户点赞或取消点赞时，发送消息到 Kafka。
+2. 消费者接收消息后，在设置的时间段内，只会向redis缓存中设置或更新一次布尔型键值，表示排行榜数据的变化。
+3. 定时器周期性检查redis缓存中的布尔键。如键存在，则表明排行榜数据有变化，触发本地缓存从 Redis 拉取最新数据，拉取后重置该键。
+4. 用户请求排行榜数据时，从本地缓存中获取数据。
+5. 如果本地缓存中没有数据，则从 Redis 拉取数据，并发送消息到 Kafka。
+6. 消费者接收消息后，在设置的时间段内，只会向redis缓存中设置或更新一次布尔型键值，表示排行榜数据的变化。
+7. 如果redis有数据，返回redis排行榜数据。
+8. 如果redis没有数据，去数据库拉取数据，返回数据库排行榜数据。
+9. 在以上返回数据库排行榜数据的同时，异步更新redis排行榜数据。
+10. redis更新完成排行榜数据后，发送消息到 Kafka。
+
+### 代码实现
+
+- handler层: 接口调用流程的实现
+    - [article_handler](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/web/article_handler.go#L326-L350)
+- service层: 业务逻辑的实现
+    - [interactive_service](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/service/interactive.go#L30-L65)
+- repository层: 数据库与缓存操作的实现
+    - [interactive_repository](https://github.com/ycvk/geek_homework/blob/b89b00f471642aac670c2f8d2082955fead93e4b/tinybook/internal/repository/interactive.go#L35-L60)
+- dao层: 数据库操作的实现
+    - [interactive_dao](https://github.com/ycvk/geek_homework/blob/b89b00f471642aac670c2f8d2082955fead93e4b/tinybook/internal/repository/dao/interactive.go#L63-L71)
+- cache层: 缓存操作的实现
+    - [interactive_cache](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/repository/cache/interactive.go#L42-L108)
+- kafka层: kafka消息队列的实现
+    - [producer](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/events/interactive/producer.go)
+    - [consumer](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/events/interactive/consumer.go)
+    - 定时器 ticker
+      的实现也在其中 [ticker](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/events/interactive/consumer.go#L118-L159)
+    - 配合定时器的固定时间尺度，比如 **(1分钟/8小时/1天)** ，可以做到 **每固定时间** 去检查一次redis缓存中的布尔键。
+
+    - 如果键存在，则表明排行榜数据有变化，触发本地缓存从 Redis 拉取最新数据，拉取后重置该键。如果键不存在，则表明排行榜数据没有变化，不更新本地缓存。
+    - 而`consumer`中的`Call()`方法，则保证了在给定时间内，无论消费者多少次消费，也只会最多执行一次去更新redis中的`bool key`
+      的操作。
+
+### UML时序图
+
+![UML时序图](https://github.com/ycvk/PicDemo/blob/main/1750319627.png?raw=true)
+
+### 测试结果
+
+#### 测试环境
+
+- MacBook Pro 2021 M1Max 32G
+- macOS Sonoma 14.1.2
+- Go 1.21.4
+- Redis 7
+- Kafka 3.6.0
+- MySQL 8.0.27
+
+#### 1. 没有缓存时，从数据库拉取数据
+
+![test_01](https://github.com/ycvk/PicDemo/blob/main/2108972058.png?raw=true)
+
+#### 2. 有redis缓存时，从redis拉取数据
+
+![test_02](https://github.com/ycvk/PicDemo/blob/main/764976255.png?raw=true)
+
+#### 3. 有本地缓存时，从本地缓存拉取数据
+
+![test_03](https://github.com/ycvk/PicDemo/blob/main/44177685.png?raw=true)
+
+#### 结论
+
+可看到，当有本地缓存时，平均响应时间直接降低了50%以上。
+QPS为8151.66，比没有缓存时提高了5倍多。且没有任何错误。
+
+直接请求数据库时，可以看到后面的请求响应时间都是timeout，错误率超过50%，比走redis慢了4倍，比走本地缓存慢了5倍多。
 
 ---
