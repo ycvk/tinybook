@@ -55,7 +55,14 @@ func (g *GormCronJobDao) Preempt(ctx context.Context) (Job, error) {
 	for {
 		var job Job
 		now := time.Now().UnixMilli()
-		err := db.Where("status = ? and next_run_time < ?", JobStatusWaiting, now).First(&job).Error
+		err := db.
+			// 选出状态为 waiting 下次执行时间小于当前时间的任务 表示等待执行的任务
+			Where("status = ? and next_run_time < ?", JobStatusWaiting, now).
+			// 或者 选出状态为 running 但是更新时间超过1分钟的任务 表示执行超时并且续约失败的任务
+			// 65s 是延时5秒 为了防止数据库时间和程序时间不一致导致的任务被提前选出
+			Or("status = ? and utime < ?", JobStatusRunning, now-65*1000).
+			First(&job).
+			Error
 		if err != nil {
 			return Job{}, err
 		}
