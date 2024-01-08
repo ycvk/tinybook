@@ -14,6 +14,7 @@ func CreateTable(db *gorm.DB) {
 		&dao.Interactive{},
 		&dao.LikeRecord{},
 		&dao.CollectRecord{},
+		&dao.Job{},
 	)
 	if err != nil {
 		panic(err)

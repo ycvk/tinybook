@@ -5,6 +5,7 @@ package main
 import (
 	"geek_homework/tinybook/internal/events/article"
 	"geek_homework/tinybook/internal/events/interactive"
+	"geek_homework/tinybook/internal/job"
 	"geek_homework/tinybook/internal/repository"
 	"geek_homework/tinybook/internal/repository/cache"
 	"geek_homework/tinybook/internal/repository/dao"
@@ -28,6 +29,16 @@ var interactiveServiceProvider = wire.NewSet(
 	dao.NewGormInteractiveDAO,
 	repository.NewCachedInteractiveRepository,
 	service.NewInteractiveService,
+)
+
+// job 服务
+var jobServiceProvider = wire.NewSet(
+	service.NewCronJobService,
+	repository.NewCronJobRepository,
+	dao.NewGormCronJobDao,
+
+	job.NewScheduler,
+	job.NewLocalFuncExecutor,
 )
 
 func InitWebServer() *App {
@@ -62,6 +73,8 @@ func InitWebServer() *App {
 		// 初始化点赞榜 like rank kafka
 		interactive.NewKafkaLikeRankProducer, interactive.NewKafkaLikeRankConsumer,
 
+		// 初始化job
+		jobServiceProvider,
 		wire.Struct(new(App), "*"),
 	)
 

@@ -7,6 +7,7 @@ require (
 	github.com/IBM/sarama v1.41.2
 	github.com/Yiling-J/theine-go v0.3.1
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
+	github.com/bsm/redislock v0.9.4
 	github.com/bytedance/sonic v1.10.2
 	github.com/charmbracelet/bubbletea v0.24.2
 	github.com/cockroachdb/errors v1.11.1

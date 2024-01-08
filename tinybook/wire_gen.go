@@ -9,6 +9,7 @@ package main
 import (
 	"geek_homework/tinybook/internal/events/article"
 	"geek_homework/tinybook/internal/events/interactive"
+	"geek_homework/tinybook/internal/job"
 	"geek_homework/tinybook/internal/repository"
 	"geek_homework/tinybook/internal/repository/cache"
 	"geek_homework/tinybook/internal/repository/dao"
@@ -69,10 +70,15 @@ func InitWebServer() *App {
 	client := ioc.InitRedisLock(cmdable)
 	rankingJob := ioc.InitRankingJob(rankingService, client, logger)
 	cron := ioc.InitJobs(logger, rankingJob)
+	cronJobDao := dao.NewGormCronJobDao(db)
+	cronJobRepository := repository.NewCronJobRepository(cronJobDao)
+	cronJobService := service.NewCronJobService(logger, cronJobRepository)
+	scheduler := job.NewScheduler(cronJobService, logger)
 	app := &App{
 		server:    engine,
 		consumers: v2,
 		cron:      cron,
+		scheduler: scheduler,
 	}
 	return app
 }
@@ -84,3 +90,6 @@ var rankingServiceProvider = wire.NewSet(cache.NewRedisRankingCache, repository.
 
 // interactive 互动服务
 var interactiveServiceProvider = wire.NewSet(cache.NewRedisInteractiveCache, dao.NewGormInteractiveDAO, repository.NewCachedInteractiveRepository, service.NewInteractiveService)
+
+// job 服务
+var jobServiceProvider = wire.NewSet(service.NewCronJobService, repository.NewCronJobRepository, dao.NewGormCronJobDao, job.NewScheduler, job.NewLocalFuncExecutor)
