@@ -96,14 +96,18 @@ func (c *ConsistentHash) UpdateLoad(nodeID string, load int32) {
 }
 
 // AutoUpdateLoadByFunc 定时更新节点负载
-func (c *ConsistentHash) AutoUpdateLoadByFunc(nodeID string, duration time.Duration, loadFunc func() int32) {
+func (c *ConsistentHash) AutoUpdateLoadByFunc(nodeID string, duration time.Duration, loadFunc func() (int32, error)) {
 	ticker := time.NewTicker(duration)
 	go func() {
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
-				c.UpdateLoad(nodeID, loadFunc())
+				load, err := loadFunc()
+				if err != nil {
+					c.UpdateLoad(nodeID, MaxLoad) // 如果获取负载失败，就设置为最大负载,节点将不会被选中
+				}
+				c.UpdateLoad(nodeID, load)
 			}
 		}
 	}()
