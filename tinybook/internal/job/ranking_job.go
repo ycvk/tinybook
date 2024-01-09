@@ -52,7 +52,7 @@ func NewRankingJob(rankingSvc service.RankingService, t time.Duration, lock *red
 		Nodes: make(hashring.NodeMap),
 	}
 	// 添加节点
-	ch.AddNode(hashring.Node{ID: r.Id, Load: r.GetLoad()})
+	ch.AddNode(hashring.Node{ID: r.Id, Load: r.load})
 	// 定时(10s)更新哈希环中的节点负载
 	ch.AutoUpdateLoadByFunc(r.Id, time.Second*10, r.GetLoad)
 	r.hashRing = ch
@@ -65,8 +65,8 @@ func (r *RankingJob) setLoad(load int32) {
 }
 
 // GetLoad TODO:这是用来获取负载的，实际使用时需要删除
-func (r *RankingJob) GetLoad() int32 {
-	return r.load
+func (r *RankingJob) GetLoad() (int32, error) {
+	return r.load, nil
 }
 
 func (r *RankingJob) Name() string {
@@ -102,7 +102,7 @@ func (r *RankingJob) Run() error {
 		}
 	}()
 	// 执行前再次检查节点负载 如果目前节点突然已经超过阈值，就不执行，释放此分布式锁，打印日志
-	if r.GetLoad() > r.threshold {
+	if r.load > r.threshold {
 		r.log.Warn("ranking job load is too high", zap.String("node", node.ID), zap.Int32("load", node.Load))
 		return nil
 	}
