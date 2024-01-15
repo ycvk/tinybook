@@ -33,12 +33,20 @@ type ConsistentHash struct {
 func (c *ConsistentHash) AddNode(node Node) {
 	c.Lock()
 	defer c.Unlock()
-	virtualNodes := MaxLoad - node.Load // 虚拟节点数 负载越高的节点 虚拟节点越少 就越不容易被选中
+
+	if node.Load > MaxLoad {
+		node.Load = MaxLoad
+	}
+	virtualNodes := MaxLoad - node.Load // 虚拟节点数量 = 最大负载 - 节点负载, 负载越高 节点越少
+	keys := make([]uint32, virtualNodes)
+
 	for i := 0; i < int(virtualNodes); i++ {
 		key := c.hashKey(node.ID + strconv.Itoa(i))
 		c.Nodes[key] = node
-		c.Ring = append(c.Ring, key)
+		keys[i] = key
 	}
+
+	c.Ring = append(c.Ring, keys...)
 	sort.Slice(c.Ring, func(i, j int) bool {
 		return c.Ring[i] < c.Ring[j]
 	})
@@ -48,14 +56,16 @@ func (c *ConsistentHash) AddNode(node Node) {
 func (c *ConsistentHash) RemoveNode(nodeID string) {
 	c.Lock()
 	defer c.Unlock()
+	var newRing HashRing
 	for i := 0; i < MaxLoad; i++ {
 		key := c.hashKey(nodeID + strconv.Itoa(i))
-		index := c.search(key)
-		if index >= 0 {
-			c.Ring = append(c.Ring[:index], c.Ring[index+1:]...)
+		if _, exists := c.Nodes[key]; exists {
 			delete(c.Nodes, key)
+			continue
 		}
+		newRing = append(newRing, c.Ring[i])
 	}
+	c.Ring = newRing
 }
 
 // GetNode 返回负载极可能最小的节点
@@ -68,6 +78,19 @@ func (c *ConsistentHash) GetNode(key string) Node {
 	hash := c.hashKey(key)
 	idx := c.search(hash)
 	return c.Nodes[c.Ring[idx]]
+}
+
+// DeepCopy 方法用于深度复制 ConsistentHash 实例
+func (c *ConsistentHash) DeepCopy() *ConsistentHash {
+	newCH := &ConsistentHash{
+		Ring:  make(HashRing, len(c.Ring)),
+		Nodes: make(NodeMap, len(c.Nodes)),
+	}
+	copy(newCH.Ring, c.Ring)
+	for k, v := range c.Nodes {
+		newCH.Nodes[k] = v
+	}
+	return newCH
 }
 
 // hashKey 为字符串键生成哈希值
