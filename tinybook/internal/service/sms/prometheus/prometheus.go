@@ -2,9 +2,9 @@ package prometheus
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/service/sms"
 	"github.com/prometheus/client_golang/prometheus"
 	"time"
+	"tinybook/tinybook/internal/service/sms"
 )
 
 type Decorator struct {

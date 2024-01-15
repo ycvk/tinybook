@@ -2,9 +2,9 @@ package ratelimit
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/service/sms"
-	"geek_homework/tinybook/pkg/limiter"
 	"github.com/pingcap/errors"
+	"tinybook/tinybook/internal/service/sms"
+	"tinybook/tinybook/pkg/limiter"
 )
 
 var ErrLimitReached = errors.New("rate limit reached in sms service")

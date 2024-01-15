@@ -1,8 +1,8 @@
 package ioc
 
 import (
-	"geek_homework/tinybook/internal/repository/dao"
 	"gorm.io/gorm"
+	"tinybook/tinybook/internal/repository/dao"
 )
 
 func CreateTable(db *gorm.DB) {

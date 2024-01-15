@@ -1,10 +1,10 @@
 package main
 
 import (
-	"geek_homework/tinybook/internal/events"
-	"geek_homework/tinybook/internal/job"
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron/v3"
+	"tinybook/tinybook/internal/events"
+	"tinybook/tinybook/internal/job"
 )
 
 type App struct {

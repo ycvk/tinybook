@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/domain"
-	"geek_homework/tinybook/internal/events/article"
-	"geek_homework/tinybook/internal/repository"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"strconv"
 	"time"
+	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/internal/events/article"
+	"tinybook/tinybook/internal/repository"
 )
 
 type ArticleService interface {

@@ -2,8 +2,8 @@ package auth
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/service/sms"
 	"github.com/golang-jwt/jwt/v5"
+	"tinybook/tinybook/internal/service/sms"
 )
 
 type SMSService struct {

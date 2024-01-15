@@ -2,8 +2,6 @@ package interactive
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/domain"
-	"geek_homework/tinybook/pkg/kafkax"
 	"github.com/Yiling-J/theine-go"
 	"github.com/bytedance/sonic"
 	"github.com/cockroachdb/errors"
@@ -17,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/pkg/kafkax"
 )
 
 const (

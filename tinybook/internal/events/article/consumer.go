@@ -3,15 +3,15 @@ package article
 import (
 	"context"
 	"errors"
-	"geek_homework/tinybook/internal/events"
-	"geek_homework/tinybook/internal/events/interactive"
-	"geek_homework/tinybook/internal/repository"
 	"github.com/bytedance/sonic"
 	"github.com/segmentio/kafka-go"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"strings"
 	"time"
+	"tinybook/tinybook/internal/events"
+	"tinybook/tinybook/internal/events/interactive"
+	"tinybook/tinybook/internal/repository"
 )
 
 const GroupArticleRead = "group-article-read"

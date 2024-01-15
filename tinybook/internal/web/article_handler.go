@@ -1,14 +1,14 @@
 package web
 
 import (
-	"geek_homework/tinybook/internal/domain"
-	"geek_homework/tinybook/internal/service"
-	"geek_homework/tinybook/internal/web/jwt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"net/http"
 	"strconv"
+	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/internal/service"
+	"tinybook/tinybook/internal/web/jwt"
 )
 
 type ArticleHandler struct {

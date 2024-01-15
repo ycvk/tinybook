@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/domain"
-	"geek_homework/tinybook/internal/repository"
-	"geek_homework/tinybook/pkg/priorityqueue"
 	"github.com/samber/lo"
 	"math"
 	"time"
+	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/internal/repository"
+	"tinybook/tinybook/pkg/priorityqueue"
 )
 
 type RankingService interface {

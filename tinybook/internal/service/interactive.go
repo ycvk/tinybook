@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/domain"
-	"geek_homework/tinybook/internal/events/interactive"
-	"geek_homework/tinybook/internal/repository"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"strconv"
+	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/internal/events/interactive"
+	"tinybook/tinybook/internal/repository"
 )
 
 type InteractiveService interface {

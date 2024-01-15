@@ -2,7 +2,6 @@ package jwt
 
 import (
 	"fmt"
-	"geek_homework/tinybook/internal/domain"
 	"github.com/cockroachdb/errors"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -11,6 +10,7 @@ import (
 	"log/slog"
 	"strings"
 	"time"
+	"tinybook/tinybook/internal/domain"
 )
 
 const JWTKey = "MK7z43qKmUkY5sy9w3rQ8CygFpOSN90W"

@@ -3,10 +3,10 @@ package ratelimit
 import (
 	_ "embed"
 	"fmt"
-	"geek_homework/tinybook/pkg/limiter"
 	"github.com/gin-gonic/gin"
 	"log/slog"
 	"net/http"
+	"tinybook/tinybook/pkg/limiter"
 )
 
 type Builder struct {

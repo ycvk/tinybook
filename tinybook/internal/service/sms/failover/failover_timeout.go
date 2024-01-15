@@ -3,8 +3,8 @@ package failover
 import (
 	"context"
 	"errors"
-	"geek_homework/tinybook/internal/service/sms"
 	"sync/atomic"
+	"tinybook/tinybook/internal/service/sms"
 )
 
 type TimeoutFailoverSMSService struct {

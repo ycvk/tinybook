@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/repository/dao"
 	"github.com/bytedance/sonic"
+	"tinybook/tinybook/internal/repository/dao"
 )
 
 type SMSRepository interface {

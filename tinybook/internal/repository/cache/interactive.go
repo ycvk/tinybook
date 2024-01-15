@@ -3,14 +3,14 @@ package cache
 import (
 	"context"
 	"fmt"
-	"geek_homework/tinybook/internal/domain"
-	"geek_homework/tinybook/internal/events/interactive"
 	"github.com/Yiling-J/theine-go"
 	"github.com/redis/go-redis/v9"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"strconv"
+	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/internal/events/interactive"
 )
 
 const (

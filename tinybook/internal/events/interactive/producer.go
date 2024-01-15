@@ -2,10 +2,10 @@ package interactive
 
 import (
 	"context"
-	"geek_homework/tinybook/pkg/kafkax"
 	"github.com/bytedance/sonic"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/segmentio/kafka-go"
+	"tinybook/tinybook/pkg/kafkax"
 )
 
 const TopicInteractiveLikeRank = "topic-article-like-rank"

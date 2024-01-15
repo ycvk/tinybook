@@ -2,9 +2,9 @@ package repository
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/domain"
-	"geek_homework/tinybook/internal/repository/dao"
 	"time"
+	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/internal/repository/dao"
 )
 
 type CronJobRepository interface {

@@ -2,11 +2,11 @@ package retry
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/repository"
-	"geek_homework/tinybook/internal/service/sms"
-	"geek_homework/tinybook/pkg/limiter"
 	"github.com/cockroachdb/errors"
 	"log/slog"
+	"tinybook/tinybook/internal/repository"
+	"tinybook/tinybook/internal/service/sms"
+	"tinybook/tinybook/pkg/limiter"
 )
 
 type AsyncFailoverSMSService struct {

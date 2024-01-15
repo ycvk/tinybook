@@ -3,17 +3,17 @@
 package main
 
 import (
-	"geek_homework/tinybook/internal/events/article"
-	"geek_homework/tinybook/internal/events/interactive"
-	"geek_homework/tinybook/internal/job"
-	"geek_homework/tinybook/internal/repository"
-	"geek_homework/tinybook/internal/repository/cache"
-	"geek_homework/tinybook/internal/repository/dao"
-	"geek_homework/tinybook/internal/service"
-	"geek_homework/tinybook/internal/web"
-	"geek_homework/tinybook/internal/web/jwt"
-	"geek_homework/tinybook/ioc"
 	"github.com/google/wire"
+	"tinybook/tinybook/internal/events/article"
+	"tinybook/tinybook/internal/events/interactive"
+	"tinybook/tinybook/internal/job"
+	"tinybook/tinybook/internal/repository"
+	"tinybook/tinybook/internal/repository/cache"
+	"tinybook/tinybook/internal/repository/dao"
+	"tinybook/tinybook/internal/service"
+	"tinybook/tinybook/internal/web"
+	"tinybook/tinybook/internal/web/jwt"
+	"tinybook/tinybook/ioc"
 )
 
 // 热榜服务

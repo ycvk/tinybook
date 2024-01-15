@@ -1,12 +1,6 @@
 package ioc
 
 import (
-	"geek_homework/tinybook/internal/web"
-	"geek_homework/tinybook/internal/web/jwt"
-	"geek_homework/tinybook/internal/web/middleware"
-	"geek_homework/tinybook/pkg/ginx/middleware/prometheus"
-	"geek_homework/tinybook/pkg/ginx/middleware/ratelimit"
-	"geek_homework/tinybook/pkg/limiter"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	redisSession "github.com/gin-contrib/sessions/redis"
@@ -18,6 +12,12 @@ import (
 	"go.uber.org/zap"
 	"strings"
 	"time"
+	"tinybook/tinybook/internal/web"
+	"tinybook/tinybook/internal/web/jwt"
+	"tinybook/tinybook/internal/web/middleware"
+	"tinybook/tinybook/pkg/ginx/middleware/prometheus"
+	"tinybook/tinybook/pkg/ginx/middleware/ratelimit"
+	"tinybook/tinybook/pkg/limiter"
 )
 
 func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler,

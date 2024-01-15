@@ -1,7 +1,6 @@
 package ioc
 
 import (
-	"geek_homework/tinybook/pkg/gormx"
 	prometheus2 "github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -12,6 +11,7 @@ import (
 	"gorm.io/plugin/prometheus"
 	"sync"
 	"time"
+	"tinybook/tinybook/pkg/gormx"
 )
 
 const filterPrometheus = "SHOW STATUS"

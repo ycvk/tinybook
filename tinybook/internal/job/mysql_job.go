@@ -2,12 +2,12 @@ package job
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/domain"
-	"geek_homework/tinybook/internal/service"
 	"github.com/cockroachdb/errors"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 	"time"
+	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/internal/service"
 )
 
 type Executor interface {

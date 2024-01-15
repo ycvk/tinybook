@@ -2,13 +2,13 @@ package job
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/service"
-	"geek_homework/tinybook/pkg/hashring"
 	"github.com/bsm/redislock"
 	"github.com/lithammer/shortuuid/v4"
 	"go.uber.org/zap"
 	"math/rand"
 	"time"
+	"tinybook/tinybook/internal/service"
+	"tinybook/tinybook/pkg/hashring"
 )
 
 type RankingJob struct {

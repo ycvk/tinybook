@@ -1,8 +1,8 @@
 package ioc
 
 import (
-	"geek_homework/tinybook/internal/service/oauth2/wechat"
 	"os"
+	"tinybook/tinybook/internal/service/oauth2/wechat"
 )
 
 func InitWechatService() wechat.Service {
