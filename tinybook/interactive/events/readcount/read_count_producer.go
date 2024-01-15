@@ -1,4 +1,4 @@
-package article
+package readcount
 
 import (
 	"context"
@@ -21,7 +21,7 @@ type KafkaAsyncProducer struct {
 	writer *kafka.Writer
 }
 
-func NewKafkaArticleProducer(writer *kafka.Writer) ReadEventProducer {
+func NewKafkaReadCountProducer(writer *kafka.Writer) ReadEventProducer {
 	return &KafkaAsyncProducer{writer: writer}
 }
 

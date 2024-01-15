@@ -6,8 +6,10 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"strconv"
+	domain2 "tinybook/tinybook/interactive/domain"
+	"tinybook/tinybook/interactive/events/rank"
+	repository2 "tinybook/tinybook/interactive/repository"
 	"tinybook/tinybook/internal/domain"
-	"tinybook/tinybook/internal/events/interactive"
 	"tinybook/tinybook/internal/repository"
 )
 
@@ -16,31 +18,31 @@ type InteractiveService interface {
 	Like(ctx context.Context, biz string, id int64, uid int64) error
 	Unlike(ctx context.Context, biz string, id int64, uid int64) error
 	Collect(ctx context.Context, biz string, id int64, cid int64, uid int64) error
-	GetInteractive(ctx context.Context, biz string, id int64, uid int64) (domain.Interactive, error)
-	GetLikeRanks(ctx context.Context, biz string, num int64) ([]domain.ArticleVo, error)
-	GetByIds(ctx context.Context, biz string, ids []int64) (map[int64]domain.Interactive, error)
+	GetInteractive(ctx context.Context, biz string, id int64, uid int64) (domain2.Interactive, error)
+	GetLikeRanks(ctx context.Context, biz string, num int64) ([]domain2.ArticleVo, error)
+	GetByIds(ctx context.Context, biz string, ids []int64) (map[int64]domain2.Interactive, error)
 }
 
 type interactiveService struct {
-	repo          repository.InteractiveRepository
+	repo          repository2.InteractiveRepository
 	articleRepo   repository.ArticleRepository
-	likeRankEvent interactive.LikeRankEventProducer
+	likeRankEvent rank.LikeRankEventProducer
 	log           *zap.Logger
 }
 
-func (i *interactiveService) GetByIds(ctx context.Context, biz string, ids []int64) (map[int64]domain.Interactive, error) {
+func (i *interactiveService) GetByIds(ctx context.Context, biz string, ids []int64) (map[int64]domain2.Interactive, error) {
 	interactives, err := i.repo.GetByIds(ctx, biz, ids)
 	if err != nil {
 		return nil, err
 	}
-	m := make(map[int64]domain.Interactive, len(interactives))
+	m := make(map[int64]domain2.Interactive, len(interactives))
 	for _, item := range interactives {
 		m[item.BizId] = item
 	}
 	return m, nil
 }
 
-func (i *interactiveService) GetLikeRanks(ctx context.Context, biz string, num int64) ([]domain.ArticleVo, error) {
+func (i *interactiveService) GetLikeRanks(ctx context.Context, biz string, num int64) ([]domain2.ArticleVo, error) {
 	// 获取 topN 文章的点赞数与id
 	likeRanks, err := i.repo.GetLikeRanks(ctx, biz, num)
 	if err != nil {
@@ -66,8 +68,8 @@ func (i *interactiveService) GetLikeRanks(ctx context.Context, biz string, num i
 		return nil, err
 	}
 	// 转换为 ArticleVo
-	vos := lo.Map(articles, func(item domain.Article, index int) domain.ArticleVo {
-		return domain.ArticleVo{
+	vos := lo.Map(articles, func(item domain.Article, index int) domain2.ArticleVo {
+		return domain2.ArticleVo{
 			ID:          item.ID,
 			Title:       item.Title,
 			Content:     item.Content, // 这里返回的文章内容，是已经在`GetPubArticleById`里经过处理的，比如截取前100个字符
@@ -77,10 +79,10 @@ func (i *interactiveService) GetLikeRanks(ctx context.Context, biz string, num i
 	return vos, nil
 }
 
-func (i *interactiveService) GetInteractive(ctx context.Context, biz string, id int64, uid int64) (domain.Interactive, error) {
+func (i *interactiveService) GetInteractive(ctx context.Context, biz string, id int64, uid int64) (domain2.Interactive, error) {
 	interactiveData, err := i.repo.GetInteractive(ctx, biz, id)
 	if err != nil {
-		return domain.Interactive{}, err
+		return domain2.Interactive{}, err
 	}
 	var eg errgroup.Group
 	eg.Go(func() error {
@@ -107,7 +109,7 @@ func (i *interactiveService) Like(ctx context.Context, biz string, id int64, uid
 	}
 	// 异步发送点赞事件
 	go func() {
-		err2 := i.likeRankEvent.ProduceLikeRankEvent(interactive.LikeRankEvent{
+		err2 := i.likeRankEvent.ProduceLikeRankEvent(rank.LikeRankEvent{
 			ArticleID: id,
 			Change:    true,
 		})
@@ -127,7 +129,7 @@ func (i *interactiveService) Unlike(ctx context.Context, biz string, id int64, u
 	}
 	// 异步发送取消点赞事件
 	go func() {
-		err2 := i.likeRankEvent.ProduceLikeRankEvent(interactive.LikeRankEvent{
+		err2 := i.likeRankEvent.ProduceLikeRankEvent(rank.LikeRankEvent{
 			ArticleID: id,
 			Change:    true,
 		})
@@ -140,7 +142,7 @@ func (i *interactiveService) Unlike(ctx context.Context, biz string, id int64, u
 	return nil
 }
 
-func NewInteractiveService(repo repository.InteractiveRepository, articleRepository repository.ArticleRepository, event interactive.LikeRankEventProducer, logger *zap.Logger) InteractiveService {
+func NewInteractiveService(repo repository2.InteractiveRepository, articleRepository repository.ArticleRepository, event rank.LikeRankEventProducer, logger *zap.Logger) InteractiveService {
 	return &interactiveService{repo: repo, articleRepo: articleRepository, likeRankEvent: event, log: logger}
 }
 

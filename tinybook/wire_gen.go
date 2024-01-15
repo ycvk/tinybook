@@ -8,8 +8,12 @@ package main
 
 import (
 	"github.com/google/wire"
-	"tinybook/tinybook/internal/events/article"
-	"tinybook/tinybook/internal/events/interactive"
+	"tinybook/tinybook/interactive/events/rank"
+	"tinybook/tinybook/interactive/events/readcount"
+	repository2 "tinybook/tinybook/interactive/repository"
+	cache2 "tinybook/tinybook/interactive/repository/cache"
+	dao2 "tinybook/tinybook/interactive/repository/dao"
+	service2 "tinybook/tinybook/interactive/service"
 	"tinybook/tinybook/internal/job"
 	"tinybook/tinybook/internal/repository"
 	"tinybook/tinybook/internal/repository/cache"
@@ -52,18 +56,18 @@ func InitWebServer() *App {
 	articleCache := cache.NewRedisArticleCache(cmdable)
 	articleRepository := repository.NewCachedArticleRepository(articleDAO, articleCache, userRepository, logger)
 	writer := ioc.InitWriter()
-	readEventProducer := article.NewKafkaArticleProducer(writer)
+	readEventProducer := readcount.NewKafkaReadCountProducer(writer)
 	articleService := service.NewArticleService(articleRepository, readEventProducer, logger)
-	interactiveDAO := dao.NewGormInteractiveDAO(db)
-	likeRankEventProducer := interactive.NewKafkaLikeRankProducer(writer)
-	interactiveCache := cache.NewRedisInteractiveCache(cmdable, logger, theineCache, likeRankEventProducer)
-	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, logger)
-	interactiveService := service.NewInteractiveService(interactiveRepository, articleRepository, likeRankEventProducer, logger)
+	interactiveDAO := dao2.NewGormInteractiveDAO(db)
+	likeRankEventProducer := rank.NewKafkaLikeRankProducer(writer)
+	interactiveCache := cache2.NewRedisInteractiveCache(cmdable, logger, theineCache, likeRankEventProducer)
+	interactiveRepository := repository2.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, logger)
+	interactiveService := service2.NewInteractiveService(interactiveRepository, articleRepository, likeRankEventProducer, logger)
 	articleHandler := web.NewArticleHandler(articleService, interactiveService, logger)
 	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler)
-	kafkaConsumer := article.NewKafkaConsumer(interactiveRepository, logger)
-	interactiveKafkaConsumer := interactive.NewKafkaLikeRankConsumer(logger, theineCache, cmdable)
-	v2 := article.CollectConsumer(kafkaConsumer, interactiveKafkaConsumer)
+	readCountKafkaConsumer := readcount.NewKafkaReadCountConsumer(interactiveRepository, logger)
+	likeRankKafkaConsumer := rank.NewKafkaLikeRankConsumer(logger, theineCache, cmdable)
+	v2 := readcount.CollectConsumer(readCountKafkaConsumer, likeRankKafkaConsumer)
 	rankingCache := cache.NewRedisRankingCache(cmdable)
 	rankingRepository := repository.NewCachedRankingRepository(rankingCache)
 	rankingService := service.NewBatchRankingService(interactiveService, articleService, rankingRepository)
@@ -89,7 +93,7 @@ func InitWebServer() *App {
 var rankingServiceProvider = wire.NewSet(cache.NewRedisRankingCache, repository.NewCachedRankingRepository, service.NewBatchRankingService)
 
 // interactive 互动服务
-var interactiveServiceProvider = wire.NewSet(cache.NewRedisInteractiveCache, dao.NewGormInteractiveDAO, repository.NewCachedInteractiveRepository, service.NewInteractiveService)
+var interactiveServiceProvider = wire.NewSet(cache2.NewRedisInteractiveCache, dao2.NewGormInteractiveDAO, repository2.NewCachedInteractiveRepository, service2.NewInteractiveService)
 
 // job 服务
 var jobServiceProvider = wire.NewSet(service.NewCronJobService, repository.NewCronJobRepository, dao.NewGormCronJobDao, job.NewScheduler, job.NewLocalFuncExecutor)

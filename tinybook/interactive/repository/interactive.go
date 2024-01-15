@@ -5,9 +5,9 @@ import (
 	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"time"
-	"tinybook/tinybook/internal/domain"
-	"tinybook/tinybook/internal/repository/cache"
-	"tinybook/tinybook/internal/repository/dao"
+	"tinybook/tinybook/interactive/domain"
+	"tinybook/tinybook/interactive/repository/cache"
+	"tinybook/tinybook/interactive/repository/dao"
 )
 
 type InteractiveRepository interface {

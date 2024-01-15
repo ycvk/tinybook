@@ -1,4 +1,4 @@
-package article
+package readcount
 
 import (
 	"context"
@@ -9,29 +9,29 @@ import (
 	"go.uber.org/zap"
 	"strings"
 	"time"
-	"tinybook/tinybook/internal/events"
-	"tinybook/tinybook/internal/events/interactive"
-	"tinybook/tinybook/internal/repository"
+	"tinybook/tinybook/interactive/events"
+	"tinybook/tinybook/interactive/events/rank"
+	"tinybook/tinybook/interactive/repository"
 )
 
 const GroupArticleRead = "group-article-read"
 
-type KafkaConsumer struct {
+type ReadCountKafkaConsumer struct {
 	reader *kafka.Reader
 	repo   repository.InteractiveRepository
 	log    *zap.Logger
 }
 
-func NewKafkaConsumer(repo repository.InteractiveRepository, log *zap.Logger) *KafkaConsumer {
-	reader := InitReader(GroupArticleRead, TopicArticleRead)
-	return &KafkaConsumer{
+func NewKafkaReadCountConsumer(repo repository.InteractiveRepository, log *zap.Logger) *ReadCountKafkaConsumer {
+	reader := initReader(GroupArticleRead, TopicArticleRead)
+	return &ReadCountKafkaConsumer{
 		repo:   repo,
 		log:    log,
 		reader: reader,
 	}
 }
 
-func (k *KafkaConsumer) Start() {
+func (k *ReadCountKafkaConsumer) Start() {
 	go func() {
 		ctx := context.Background()
 		//k.Consume(ctx)
@@ -39,7 +39,7 @@ func (k *KafkaConsumer) Start() {
 	}()
 }
 
-func (k *KafkaConsumer) Consume(ctx context.Context) {
+func (k *ReadCountKafkaConsumer) Consume(ctx context.Context) {
 	defer func(reader *kafka.Reader) {
 		err := reader.Close()
 		if err != nil {
@@ -69,7 +69,7 @@ func (k *KafkaConsumer) Consume(ctx context.Context) {
 	}
 }
 
-func (k *KafkaConsumer) BatchConsume(ctx context.Context) {
+func (k *ReadCountKafkaConsumer) BatchConsume(ctx context.Context) {
 	timeWait := k.reader.Config().MaxWait                    // consumer最大等待时间
 	msgLen := 10                                             // 一次批量消费的消息数量
 	msgs := make([]kafka.Message, 0, msgLen)                 // 一次批量消费的消息 10条
@@ -136,11 +136,11 @@ func (k *KafkaConsumer) BatchConsume(ctx context.Context) {
 	}
 }
 
-func CollectConsumer(consumer *KafkaConsumer, likeRankConsumer *interactive.KafkaConsumer) []events.Consumer {
+func CollectConsumer(consumer *ReadCountKafkaConsumer, likeRankConsumer *rank.LikeRankKafkaConsumer) []events.Consumer {
 	return []events.Consumer{consumer, likeRankConsumer}
 }
 
-func InitReader(groupId string, topic string) *kafka.Reader {
+func initReader(groupId string, topic string) *kafka.Reader {
 	type config struct {
 		Brokers string `yaml:"brokers"`
 	}

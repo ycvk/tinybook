@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+var (
+	ErrNotFound = gorm.ErrRecordNotFound.Error()
+)
+
 type Interactive struct {
 	Id    int64  `gorm:"column:id;primaryKey;autoIncrement;not null"`
 	BizId int64  `gorm:"column:biz_id;not null;uniqueIndex:idx_biz_type_id"`

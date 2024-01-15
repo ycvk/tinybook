@@ -1,4 +1,4 @@
-package interactive
+package rank
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/interactive/domain"
 	"tinybook/tinybook/pkg/kafkax"
 )
 
@@ -27,11 +27,11 @@ const (
 )
 
 var (
-	TimeToRefreshLocalCache = 1 * time.Minute  // 定时检查本地缓存是否需要更新
-	TimeToCommitOffset      = 30 * time.Second // 多久自动commit一次offset
+	TimeToRefreshLocalCache = 5 * time.Second // 定时检查本地缓存是否需要更新
+	TimeToCommitOffset      = 0 * time.Second // 多久自动commit一次offset
 )
 
-type KafkaConsumer struct {
+type LikeRankKafkaConsumer struct {
 	reader    *kafka.Reader
 	log       *zap.Logger
 	cli       *theine.Cache[string, any]
@@ -41,11 +41,11 @@ type KafkaConsumer struct {
 	isWaiting bool
 }
 
-func NewKafkaLikeRankConsumer(log *zap.Logger, cli *theine.Cache[string, any], redisCli redis.Cmdable) *KafkaConsumer {
+func NewKafkaLikeRankConsumer(log *zap.Logger, cli *theine.Cache[string, any], redisCli redis.Cmdable) *LikeRankKafkaConsumer {
 	reader := InitReader(GroupLikeRankRead, TopicInteractiveLikeRank)
 	collector := kafkax.NewReaderCollector(reader) // 用于收集 Kafka 读取器的统计信息
 	prometheus.MustRegister(collector)             // 注册 Prometheus
-	return &KafkaConsumer{
+	return &LikeRankKafkaConsumer{
 		log:       log,
 		reader:    reader,
 		cli:       cli,
@@ -55,7 +55,7 @@ func NewKafkaLikeRankConsumer(log *zap.Logger, cli *theine.Cache[string, any], r
 	}
 }
 
-func (k *KafkaConsumer) Start() {
+func (k *LikeRankKafkaConsumer) Start() {
 	ctx := context.Background()
 	go func() {
 		k.log.Info("like rank consumer start")
@@ -68,7 +68,7 @@ func (k *KafkaConsumer) Start() {
 	}()
 }
 
-func (k *KafkaConsumer) Consume(ctx context.Context) {
+func (k *LikeRankKafkaConsumer) Consume(ctx context.Context) {
 	defer func(reader *kafka.Reader) {
 		err := reader.Close()
 		k.log.Info("close kafka like rank consumer")
@@ -122,7 +122,7 @@ func InitReader(groupId string, topic string) *kafka.Reader {
 	return r
 }
 
-func (k *KafkaConsumer) Ticker(ctx context.Context, duration time.Duration) {
+func (k *LikeRankKafkaConsumer) Ticker(ctx context.Context, duration time.Duration) {
 	ticker := time.NewTicker(duration)
 	defer ticker.Stop()
 	for {
@@ -171,7 +171,7 @@ tickerEnd:
 }
 
 // Call 执行函数，但保证在给定时间内最多执行一次
-func (k *KafkaConsumer) Call(f func(), duration time.Duration) {
+func (k *LikeRankKafkaConsumer) Call(f func(), duration time.Duration) {
 	k.mu.Lock()
 
 	if k.isWaiting {

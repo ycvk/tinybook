@@ -5,6 +5,7 @@ import (
 	"github.com/samber/lo"
 	"math"
 	"time"
+	"tinybook/tinybook/interactive/service"
 	"tinybook/tinybook/internal/domain"
 	"tinybook/tinybook/internal/repository"
 	"tinybook/tinybook/pkg/priorityqueue"
@@ -16,7 +17,7 @@ type RankingService interface {
 }
 
 type BatchRankingService struct {
-	InteractiveSvc InteractiveService
+	InteractiveSvc service.InteractiveService
 	ArticleSvc     ArticleService
 	BatchSize      int // 每次获取的文章数量
 	topNum         int // 排行榜数量
@@ -29,7 +30,7 @@ func (b *BatchRankingService) GetTopN(ctx context.Context) ([]domain.Article, er
 	return b.rankingRepo.GetTopN(ctx)
 }
 
-func NewBatchRankingService(interactiveSvc InteractiveService, articleSvc ArticleService, repo repository.RankingRepository) RankingService {
+func NewBatchRankingService(interactiveSvc service.InteractiveService, articleSvc ArticleService, repo repository.RankingRepository) RankingService {
 	return &BatchRankingService{
 		InteractiveSvc: interactiveSvc,
 		ArticleSvc:     articleSvc,

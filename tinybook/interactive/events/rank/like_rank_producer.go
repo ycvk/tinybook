@@ -1,4 +1,4 @@
-package interactive
+package rank
 
 import (
 	"context"

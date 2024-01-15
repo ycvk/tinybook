@@ -6,6 +6,8 @@ import (
 	"golang.org/x/sync/errgroup"
 	"net/http"
 	"strconv"
+	domain2 "tinybook/tinybook/interactive/domain"
+	service2 "tinybook/tinybook/interactive/service"
 	"tinybook/tinybook/internal/domain"
 	"tinybook/tinybook/internal/service"
 	"tinybook/tinybook/internal/web/jwt"
@@ -13,12 +15,12 @@ import (
 
 type ArticleHandler struct {
 	articleService     service.ArticleService
-	interactiveService service.InteractiveService
+	interactiveService service2.InteractiveService
 	l                  *zap.Logger
 	biz                string
 }
 
-func NewArticleHandler(artService service.ArticleService, interService service.InteractiveService, l *zap.Logger) *ArticleHandler {
+func NewArticleHandler(artService service.ArticleService, interService service2.InteractiveService, l *zap.Logger) *ArticleHandler {
 	return &ArticleHandler{
 		articleService:     artService,
 		interactiveService: interService,
@@ -213,7 +215,7 @@ func (h *ArticleHandler) PubDetail(context *gin.Context) {
 	var (
 		eg          errgroup.Group
 		article     domain.ArticleVo
-		interactive domain.Interactive
+		interactive domain2.Interactive
 	)
 	claims := (context.MustGet("userClaims")).(jwt.UserClaims)
 

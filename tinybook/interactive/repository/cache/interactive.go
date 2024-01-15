@@ -9,8 +9,8 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"strconv"
-	"tinybook/tinybook/internal/domain"
-	"tinybook/tinybook/internal/events/interactive"
+	"tinybook/tinybook/interactive/domain"
+	"tinybook/tinybook/interactive/events/rank"
 )
 
 const (
@@ -36,7 +36,7 @@ type RedisInteractiveCache struct {
 	log           *zap.Logger
 	cli           redis.Cmdable
 	localCli      *theine.Cache[string, any]
-	likeRankEvent interactive.LikeRankEventProducer
+	likeRankEvent rank.LikeRankEventProducer
 }
 
 func (r *RedisInteractiveCache) SetTopNLike(ctx context.Context, biz string, interactives []domain.Interactive) error {
@@ -54,7 +54,7 @@ func (r *RedisInteractiveCache) SetTopNLike(ctx context.Context, biz string, int
 	}
 	// 发送点赞排行榜事件 理论上有本地缓存存在，不会走到这里
 	go func() {
-		err2 := r.likeRankEvent.ProduceLikeRankEvent(interactive.LikeRankEvent{
+		err2 := r.likeRankEvent.ProduceLikeRankEvent(rank.LikeRankEvent{
 			Change: true,
 		})
 		if err2 != nil {
@@ -64,7 +64,7 @@ func (r *RedisInteractiveCache) SetTopNLike(ctx context.Context, biz string, int
 	return nil
 }
 
-func NewRedisInteractiveCache(cli redis.Cmdable, log *zap.Logger, cache *theine.Cache[string, any], event interactive.LikeRankEventProducer) InteractiveCache {
+func NewRedisInteractiveCache(cli redis.Cmdable, log *zap.Logger, cache *theine.Cache[string, any], event rank.LikeRankEventProducer) InteractiveCache {
 	return &RedisInteractiveCache{cli: cli, log: log, localCli: cache, likeRankEvent: event}
 }
 
@@ -97,7 +97,7 @@ func (r *RedisInteractiveCache) GetTopNLike(ctx context.Context, biz string, num
 	})
 	// 发送点赞排行榜事件 理论上有本地缓存存在，不会走到这里
 	go func() {
-		err2 := r.likeRankEvent.ProduceLikeRankEvent(interactive.LikeRankEvent{
+		err2 := r.likeRankEvent.ProduceLikeRankEvent(rank.LikeRankEvent{
 			Change: true,
 		})
 		if err2 != nil {

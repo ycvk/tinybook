@@ -11,6 +11,7 @@ import (
 	"gorm.io/plugin/prometheus"
 	"sync"
 	"time"
+	"tinybook/tinybook/interactive/repository/dao"
 	"tinybook/tinybook/pkg/gormx"
 )
 
@@ -86,6 +87,7 @@ func InitDB(zipLog *zap.Logger) *gorm.DB {
 	}
 	// TODO 为了方便测试，每次启动都会重新创建表 仅供测试使用
 	CreateTable(gormDB)
+	dao.CreateTableForInteractive(gormDB)
 	return gormDB
 }
 

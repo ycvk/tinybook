@@ -1,5 +1,7 @@
 package domain
 
+import "tinybook/tinybook/interactive/domain"
+
 type Article struct {
 	ID       int64         `json:"id"`
 	Title    string        `json:"title"`
@@ -23,7 +25,7 @@ type ArticleVo struct {
 	Utime      string `json:"utime,omitempty"`
 
 	// 以下字段用于前端展示
-	Interactive
+	domain.Interactive
 }
 
 type Author struct {

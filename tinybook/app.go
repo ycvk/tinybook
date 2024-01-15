@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron/v3"
-	"tinybook/tinybook/internal/events"
+	"tinybook/tinybook/interactive/events"
 	"tinybook/tinybook/internal/job"
 )
 

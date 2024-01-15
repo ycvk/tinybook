@@ -6,8 +6,8 @@ import (
 	"go.uber.org/zap"
 	"strconv"
 	"time"
+	"tinybook/tinybook/interactive/events/readcount"
 	"tinybook/tinybook/internal/domain"
-	"tinybook/tinybook/internal/events/article"
 	"tinybook/tinybook/internal/repository"
 )
 
@@ -23,7 +23,7 @@ type ArticleService interface {
 
 type articleService struct {
 	repo     repository.ArticleRepository
-	producer article.ReadEventProducer
+	producer readcount.ReadEventProducer
 	log      *zap.Logger
 }
 
@@ -38,7 +38,7 @@ func (a *articleService) GetPubArticleById(ctx context.Context, id int64, uid in
 	}
 	// 异步发送阅读事件
 	go func() {
-		err = a.producer.ProduceReadEvent(article.ReadEvent{
+		err = a.producer.ProduceReadEvent(readcount.ReadEvent{
 			ArticleID: id,
 			UserID:    uid,
 		})
@@ -95,7 +95,7 @@ func (a *articleService) GetArticlesByAuthor(ctx context.Context, uid int64, lim
 	}), nil
 }
 
-func NewArticleService(repo repository.ArticleRepository, producer article.ReadEventProducer, log *zap.Logger) ArticleService {
+func NewArticleService(repo repository.ArticleRepository, producer readcount.ReadEventProducer, log *zap.Logger) ArticleService {
 	//logger.With(zap.String("type", "articleService"))
 	return &articleService{repo: repo, producer: producer, log: log}
 }

@@ -4,8 +4,12 @@ package main
 
 import (
 	"github.com/google/wire"
-	"tinybook/tinybook/internal/events/article"
-	"tinybook/tinybook/internal/events/interactive"
+	"tinybook/tinybook/interactive/events/rank"
+	"tinybook/tinybook/interactive/events/readcount"
+	repository2 "tinybook/tinybook/interactive/repository"
+	cache2 "tinybook/tinybook/interactive/repository/cache"
+	dao2 "tinybook/tinybook/interactive/repository/dao"
+	service2 "tinybook/tinybook/interactive/service"
 	"tinybook/tinybook/internal/job"
 	"tinybook/tinybook/internal/repository"
 	"tinybook/tinybook/internal/repository/cache"
@@ -25,10 +29,10 @@ var rankingServiceProvider = wire.NewSet(
 
 // interactive 互动服务
 var interactiveServiceProvider = wire.NewSet(
-	cache.NewRedisInteractiveCache,
-	dao.NewGormInteractiveDAO,
-	repository.NewCachedInteractiveRepository,
-	service.NewInteractiveService,
+	cache2.NewRedisInteractiveCache,
+	dao2.NewGormInteractiveDAO,
+	repository2.NewCachedInteractiveRepository,
+	service2.NewInteractiveService,
 )
 
 // job 服务
@@ -67,11 +71,14 @@ func InitWebServer() *App {
 		web.NewArticleHandler,
 		// 初始化web 和 中间件
 		ioc.InitWebServer, ioc.InitHandlerFunc, ioc.InitLogger,
+		// 初始化kafka writer
+		ioc.InitWriter,
 		// 初始化阅读数 read num kafka
-		ioc.InitWriter, article.NewKafkaArticleProducer,
-		article.NewKafkaConsumer, article.CollectConsumer,
+		readcount.NewKafkaReadCountProducer, readcount.NewKafkaReadCountConsumer,
 		// 初始化点赞榜 like rank kafka
-		interactive.NewKafkaLikeRankProducer, interactive.NewKafkaLikeRankConsumer,
+		rank.NewKafkaLikeRankProducer, rank.NewKafkaLikeRankConsumer,
+		// 收集所有的consumer
+		readcount.CollectConsumer,
 
 		// 初始化job
 		jobServiceProvider,
