@@ -85,6 +85,8 @@ func initViper() {
 	if err != nil {
 		panic(err)
 	}
+	viper.WatchConfig()
+
 }
 
 // 监听退出

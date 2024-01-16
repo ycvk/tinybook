@@ -17,7 +17,7 @@ type RankingService interface {
 }
 
 type BatchRankingService struct {
-	InteractiveSvc intrv1.InteractiveServiceServer
+	InteractiveSvc intrv1.InteractiveServiceClient
 	ArticleSvc     ArticleService
 	BatchSize      int // 每次获取的文章数量
 	topNum         int // 排行榜数量
@@ -30,7 +30,7 @@ func (b *BatchRankingService) GetTopN(ctx context.Context) ([]domain.Article, er
 	return b.rankingRepo.GetTopN(ctx)
 }
 
-func NewBatchRankingService(interactiveSvc intrv1.InteractiveServiceServer, articleSvc ArticleService, repo repository.RankingRepository) RankingService {
+func NewBatchRankingService(interactiveSvc intrv1.InteractiveServiceClient, articleSvc ArticleService, repo repository.RankingRepository) RankingService {
 	return &BatchRankingService{
 		InteractiveSvc: interactiveSvc,
 		ArticleSvc:     articleSvc,

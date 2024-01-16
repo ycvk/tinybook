@@ -14,3 +14,7 @@ kafka:
 grpc:
   server:
     addr: "localhost:8090"
+  client:
+    intr:
+      addr: "localhost:8090"
+      threshold: "10"

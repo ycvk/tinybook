@@ -34,6 +34,9 @@ var interactiveServiceProvider = wire.NewSet(
 	dao2.NewGormInteractiveDAO,
 	repository2.NewCachedInteractiveRepository,
 	service2.NewInteractiveService,
+
+	// 远程grpc interactive
+	ioc.InitIntrClient,
 )
 
 // job 服务

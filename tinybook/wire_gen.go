@@ -64,14 +64,15 @@ func InitWebServer() *App {
 	interactiveCache := cache2.NewRedisInteractiveCache(cmdable, logger, theineCache, likeRankEventProducer)
 	interactiveRepository := repository2.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, logger)
 	interactiveService := service2.NewInteractiveService(interactiveRepository, likeRankEventProducer, logger)
-	articleHandler := web.NewArticleHandler(articleService, interactiveService, logger)
+	interactiveServiceClient := ioc.InitIntrClient(interactiveService)
+	articleHandler := web.NewArticleHandler(articleService, interactiveServiceClient, logger)
 	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler)
 	readCountKafkaConsumer := readcount2.NewKafkaReadCountConsumer(interactiveRepository, logger)
 	likeRankKafkaConsumer := rank.NewKafkaLikeRankConsumer(logger, theineCache, cmdable)
 	v2 := readcount2.CollectConsumer(readCountKafkaConsumer, likeRankKafkaConsumer)
 	rankingCache := cache.NewRedisRankingCache(cmdable)
 	rankingRepository := repository.NewCachedRankingRepository(rankingCache)
-	rankingService := service.NewBatchRankingService(interactiveService, articleService, rankingRepository)
+	rankingService := service.NewBatchRankingService(interactiveServiceClient, articleService, rankingRepository)
 	client := ioc.InitRedisLock(cmdable)
 	rankingJob := ioc.InitRankingJob(rankingService, client, logger)
 	cron := ioc.InitJobs(logger, rankingJob)
@@ -94,7 +95,7 @@ func InitWebServer() *App {
 var rankingServiceProvider = wire.NewSet(cache.NewRedisRankingCache, repository.NewCachedRankingRepository, service.NewBatchRankingService)
 
 // interactive 互动服务
-var interactiveServiceProvider = wire.NewSet(cache2.NewRedisInteractiveCache, dao2.NewGormInteractiveDAO, repository2.NewCachedInteractiveRepository, service2.NewInteractiveService)
+var interactiveServiceProvider = wire.NewSet(cache2.NewRedisInteractiveCache, dao2.NewGormInteractiveDAO, repository2.NewCachedInteractiveRepository, service2.NewInteractiveService, ioc.InitIntrClient)
 
 // job 服务
 var jobServiceProvider = wire.NewSet(service.NewCronJobService, repository.NewCronJobRepository, dao.NewGormCronJobDao, job.NewScheduler, job.NewLocalFuncExecutor)

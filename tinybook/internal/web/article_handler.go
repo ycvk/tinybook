@@ -14,12 +14,12 @@ import (
 
 type ArticleHandler struct {
 	articleService     service.ArticleService
-	interactiveService intrv1.InteractiveServiceServer
+	interactiveService intrv1.InteractiveServiceClient
 	l                  *zap.Logger
 	biz                string
 }
 
-func NewArticleHandler(artService service.ArticleService, interService intrv1.InteractiveServiceServer, l *zap.Logger) *ArticleHandler {
+func NewArticleHandler(artService service.ArticleService, interService intrv1.InteractiveServiceClient, l *zap.Logger) *ArticleHandler {
 	return &ArticleHandler{
 		articleService:     artService,
 		interactiveService: interService,
