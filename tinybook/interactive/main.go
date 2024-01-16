@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 	"tinybook/tinybook/ioc"
+	"tinybook/tinybook/pkg/grpcx"
 )
 
 func init() {
@@ -39,13 +40,14 @@ func main() {
 
 	// 启动grpc服务
 	server := app.server
-	if err := server.Serve(); err != nil {
-		panic(err)
-
-	}
+	go func() {
+		if err := server.Serve(); err != nil {
+			panic(err)
+		}
+	}()
 
 	// 监听项目退出
-	//exit(server)
+	exit(server)
 }
 
 func initPrometheus() {
@@ -69,25 +71,21 @@ func initViper() {
 }
 
 // 监听退出
-func exit(engine *http.Server) {
+func exit(engine *grpcx.Server) {
 	sigs := make(chan os.Signal, 1)
 	quit := make(chan bool, 1)
 
 	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	go func() {
 		sig := <-sigs
-		fmt.Println("收到退出信号: ", sig)
-		// 退出web服务
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := engine.Shutdown(ctx); err != nil {
-			fmt.Println("web服务退出失败: ", err)
-		}
+		fmt.Println("收到 interactive 退出信号: ", sig)
+		// 退出grpc服务
+		engine.GracefulStop()
 		quit <- true
 	}()
 	<-quit
-	fmt.Println("服务 PID 为: ", os.Getpid())
-	fmt.Println("服务已退出")
+	fmt.Println("interactive 服务 PID 为: ", os.Getpid())
+	fmt.Println("interactive 服务已退出")
 	// 查杀
 	exec.Command("killall", "main", strconv.Itoa(os.Getpid())).Run()
 	// 自杀
