@@ -1,7 +1,5 @@
 package domain
 
-import "tinybook/tinybook/interactive/domain"
-
 type Article struct {
 	ID       int64         `json:"id"`
 	Title    string        `json:"title"`
@@ -24,8 +22,14 @@ type ArticleVo struct {
 	Ctime      string `json:"ctime,omitempty"`
 	Utime      string `json:"utime,omitempty"`
 
-	// 以下字段用于前端展示
-	domain.Interactive
+	// 以下字段为interactive服务字段，用于前端展示
+	BizId        int64  `json:"bizId,omitempty"`
+	Biz          string `json:"biz,omitempty"`
+	ReadCount    int64  `json:"readCount,omitempty"`
+	LikeCount    int64  `json:"likeCount,omitempty"`
+	CollectCount int64  `json:"collectCount,omitempty"`
+	Liked        bool   `json:"liked,omitempty"`
+	Collected    bool   `json:"collected,omitempty"`
 }
 
 type Author struct {

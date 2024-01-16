@@ -5,7 +5,7 @@ import (
 	"github.com/samber/lo"
 	"math"
 	"time"
-	"tinybook/tinybook/interactive/service"
+	intrv1 "tinybook/tinybook/api/proto/gen/intr/v1"
 	"tinybook/tinybook/internal/domain"
 	"tinybook/tinybook/internal/repository"
 	"tinybook/tinybook/pkg/priorityqueue"
@@ -17,7 +17,7 @@ type RankingService interface {
 }
 
 type BatchRankingService struct {
-	InteractiveSvc service.InteractiveService
+	InteractiveSvc intrv1.InteractiveServiceServer
 	ArticleSvc     ArticleService
 	BatchSize      int // 每次获取的文章数量
 	topNum         int // 排行榜数量
@@ -30,7 +30,7 @@ func (b *BatchRankingService) GetTopN(ctx context.Context) ([]domain.Article, er
 	return b.rankingRepo.GetTopN(ctx)
 }
 
-func NewBatchRankingService(interactiveSvc service.InteractiveService, articleSvc ArticleService, repo repository.RankingRepository) RankingService {
+func NewBatchRankingService(interactiveSvc intrv1.InteractiveServiceServer, articleSvc ArticleService, repo repository.RankingRepository) RankingService {
 	return &BatchRankingService{
 		InteractiveSvc: interactiveSvc,
 		ArticleSvc:     articleSvc,
@@ -71,12 +71,16 @@ func (b *BatchRankingService) topN(ctx context.Context) ([]domain.Article, error
 			return item.ID
 		})
 		// 根据id获取article的interactive
-		byIds, err := b.InteractiveSvc.GetByIds(ctx, "article", ids)
+		byIds, err := b.InteractiveSvc.GetByIds(ctx, &intrv1.GetByIdsRequest{
+			Biz: "article",
+			Ids: ids,
+		})
 		if err != nil {
 			return nil, err
 		}
+		interactives := byIds.GetInteractives()
 		for _, article := range listPub {
-			intr := byIds[article.ID]
+			intr := interactives[article.ID]
 			score := b.ScoreFunc(intr.LikeCount, time.Unix(article.Utime, 0))
 			if b.queue.Len() > b.topNum {
 				// 队列已满

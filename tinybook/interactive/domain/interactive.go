@@ -22,6 +22,6 @@ type ArticleVo struct {
 	Ctime      string `json:"ctime,omitempty"`
 	Utime      string `json:"utime,omitempty"`
 
-	// 以下字段用于前端展示
+	// 以下字段为interactive服务字段，用于前端展示
 	Interactive
 }

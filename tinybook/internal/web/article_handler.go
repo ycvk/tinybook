@@ -6,8 +6,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"net/http"
 	"strconv"
-	domain2 "tinybook/tinybook/interactive/domain"
-	service2 "tinybook/tinybook/interactive/service"
+	intrv1 "tinybook/tinybook/api/proto/gen/intr/v1"
 	"tinybook/tinybook/internal/domain"
 	"tinybook/tinybook/internal/service"
 	"tinybook/tinybook/internal/web/jwt"
@@ -15,12 +14,12 @@ import (
 
 type ArticleHandler struct {
 	articleService     service.ArticleService
-	interactiveService service2.InteractiveService
+	interactiveService intrv1.InteractiveServiceServer
 	l                  *zap.Logger
 	biz                string
 }
 
-func NewArticleHandler(artService service.ArticleService, interService service2.InteractiveService, l *zap.Logger) *ArticleHandler {
+func NewArticleHandler(artService service.ArticleService, interService intrv1.InteractiveServiceServer, l *zap.Logger) *ArticleHandler {
 	return &ArticleHandler{
 		articleService:     artService,
 		interactiveService: interService,
@@ -215,7 +214,7 @@ func (h *ArticleHandler) PubDetail(context *gin.Context) {
 	var (
 		eg          errgroup.Group
 		article     domain.ArticleVo
-		interactive domain2.Interactive
+		interactive *intrv1.GetInteractiveResponse
 	)
 	claims := (context.MustGet("userClaims")).(jwt.UserClaims)
 
@@ -228,7 +227,11 @@ func (h *ArticleHandler) PubDetail(context *gin.Context) {
 	eg.Go(func() error {
 		var interactiveErr error
 		claims := (context.MustGet("userClaims")).(jwt.UserClaims)
-		interactive, interactiveErr = h.interactiveService.GetInteractive(context, h.biz, id, claims.Uid)
+		interactive, interactiveErr = h.interactiveService.GetInteractive(context, &intrv1.GetInteractiveRequest{
+			Biz:   h.biz,
+			BizId: id,
+			Uid:   claims.Uid,
+		})
 		return interactiveErr
 	})
 
@@ -248,7 +251,15 @@ func (h *ArticleHandler) PubDetail(context *gin.Context) {
 	//		h.l.Warn("文章阅读数增加失败, 文章ID: "+strconv.FormatInt(id, 10), zap.Error(err))
 	//	}
 	//}()
-	article.Interactive = interactive
+
+	article.BizId = interactive.Interactive.BizId
+	article.Biz = interactive.Interactive.Biz
+	article.ReadCount = interactive.Interactive.ReadCount
+	article.LikeCount = interactive.Interactive.LikeCount
+	article.CollectCount = interactive.Interactive.CollectCount
+	article.Liked = interactive.Interactive.Liked
+	article.Collected = interactive.Interactive.Collected
+
 	context.JSON(http.StatusOK, Result{
 		Code: 200,
 		Msg:  "获取成功",
@@ -272,9 +283,17 @@ func (h *ArticleHandler) Like(context *gin.Context) {
 	claims := (context.MustGet("userClaims")).(jwt.UserClaims)
 	var err error
 	if req.Like {
-		err = h.interactiveService.Like(context, h.biz, req.Id, claims.Uid)
+		_, err = h.interactiveService.Like(context, &intrv1.LikeRequest{
+			Biz:   h.biz,
+			BizId: req.Id,
+			Uid:   claims.Uid,
+		})
 	} else {
-		err = h.interactiveService.Unlike(context, h.biz, req.Id, claims.Uid)
+		_, err = h.interactiveService.Unlike(context, &intrv1.UnlikeRequest{
+			Biz:   h.biz,
+			BizId: req.Id,
+			Uid:   claims.Uid,
+		})
 	}
 	if err != nil {
 		context.JSON(http.StatusOK, Result{
@@ -310,7 +329,12 @@ func (h *ArticleHandler) Collect(ctx *gin.Context) {
 		return
 	}
 	claims := (ctx.MustGet("userClaims")).(jwt.UserClaims)
-	err := h.interactiveService.Collect(ctx, h.biz, req.Id, req.Cid, claims.Uid)
+	_, err := h.interactiveService.Collect(ctx, &intrv1.CollectRequest{
+		Biz:   h.biz,
+		BizId: req.Id,
+		Cid:   req.Cid,
+		Uid:   claims.Uid,
+	})
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 500,
@@ -342,7 +366,10 @@ func (h *ArticleHandler) Rank(context *gin.Context) {
 		})
 		return
 	}
-	ranks, err := h.interactiveService.GetLikeRanks(context, h.biz, num)
+	ranks, err := h.interactiveService.GetLikeRanks(context, &intrv1.GetLikeRanksRequest{
+		Biz: h.biz,
+		Num: num,
+	})
 	if err != nil {
 		context.JSON(http.StatusOK, Result{
 			Code: 500,
@@ -354,7 +381,7 @@ func (h *ArticleHandler) Rank(context *gin.Context) {
 	context.JSON(http.StatusOK, Result{
 		Code: 200,
 		Msg:  "获取成功",
-		Data: ranks,
+		Data: ranks.GetArticles(),
 	})
 }
 
