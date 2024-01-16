@@ -13,6 +13,7 @@ Golang class homework in Geek Space.
 - [Chapter07: 找出点赞数量前N的数据](#chapter07-找出点赞数量前N的数据)
 - [Chapter08: 为消息队列添加监控](#chapter08-为消息队列添加监控)
 - [Chapter09: 选择最合适的节点](#chapter09-选择最合适的节点)
+- [Chapter10: 在repository层面聚合grpc服务](#chapter10-在repository层面聚合grpc服务)
 
 ---
 
@@ -797,7 +798,6 @@ QPS为8151.66，比没有缓存时提高了5倍多。且没有任何错误。
 -
 这个方案的优点是，它可以在大部分情况下选择到负载较低的节点，而且它不需要引入额外的中间件。但是，它也有一些缺点，例如，它需要定期更新节点的负载值，这可能会增加系统的复杂性。此外，它也不能保证每次都能选择到最佳的节点，特别是在节点的负载变化非常快的情况下。
 
-
 - 虚拟节点的引入也有多个优点。首先，一旦某个节点不可用，该节点将使得多个虚节点不可用，从而使得多个相邻的真实节点承载失效节点的压力。
 
 
@@ -823,3 +823,31 @@ QPS为8151.66，比没有缓存时提高了5倍多。且没有任何错误。
   在`ranking_job`中，我使用了一致性哈希算法来选择节点。
 - 在`Run()`执行时，随机生成一个整数，然后使用一致性哈希算法，选择节点。
 - 因为我在`AddNode()`函数中，根据节点的负载动态确定了虚拟节点的数量，所以可以保证，负载越高的节点，被选中的几率就越低；负载越低的节点，被选中的几率就越高。
+
+---
+
+<h2 id="Chapter10">Chapter10: 在repository层面聚合grpc服务</h2>
+
+[GitHub Link](https://github.com/ycvk/tinybook/tree/dev9)
+
+### 背景要求
+
+在目前的代码中，我直接在 Handler 层面上聚合了 gRPC 服务。
+
+理论上来说，这不符合 DDD 的设计，但是好用。
+
+按照 DDD 的设计来说的话，这边应该是要把 Interactive 的 gRPC 做成一个 Repository，而后在 ArticleRepository 里面完成
+Interactive 相关的组装。
+
+换言之，将 Interactive 看做是 Article 的一个部分。
+
+因此本次需求是，用这种形态来集成 gRPC 的 Interactive。
+
+### 代码实现
+
+- [article_repository](https://github.com/ycvk/tinybook/blob/0224181e4d2edb552797af7c1468f434c66b93f1/tinybook/internal/repository/article.go#L47)
+  在repository中组合了grpc服务的client接口，并在构造函数中初始化此client。然后[实现了此client接口的所有方法](https://github.com/ycvk/tinybook/blob/0224181e4d2edb552797af7c1468f434c66b93f1/tinybook/internal/repository/article.go#L58-L84)
+- [article_handler](https://github.com/ycvk/tinybook/blob/dev9/tinybook/internal/web/article_handler.go)
+  在handler中，去掉了所有对grpc服务的依赖，只保留了对`article_service`的依赖，`article_service`中依赖了`article_repository`
+  ，而`article_repository`中依赖了grpc服务的client接口。
+  以此来实现了在repository层面聚合grpc服务的目的。
