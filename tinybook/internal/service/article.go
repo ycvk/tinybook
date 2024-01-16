@@ -6,6 +6,7 @@ import (
 	"go.uber.org/zap"
 	"strconv"
 	"time"
+	intrv1 "tinybook/tinybook/api/proto/gen/intr/v1"
 	"tinybook/tinybook/internal/domain"
 	"tinybook/tinybook/internal/events/readcount"
 	"tinybook/tinybook/internal/repository"
@@ -19,12 +20,48 @@ type ArticleService interface {
 	GetArticleById(ctx context.Context, id int64) (domain.ArticleVo, error)
 	GetPubArticleById(ctx context.Context, id int64, uid int64) (domain.ArticleVo, error)
 	ListPub(ctx context.Context, time time.Time, limit int, offset int) ([]domain.Article, error)
+	// 以下都是interactive service 的接口
+	GetInteractive(ctx context.Context, request *intrv1.GetInteractiveRequest) (*intrv1.GetInteractiveResponse, error)
+	Like(c context.Context, i *intrv1.LikeRequest) (*intrv1.LikeResponse, error)
+	Unlike(c context.Context, i *intrv1.UnlikeRequest) (*intrv1.UnlikeResponse, error)
+	Collect(ctx context.Context, i *intrv1.CollectRequest) (*intrv1.CollectResponse, error)
+	GetLikeRanks(c context.Context, i *intrv1.GetLikeRanksRequest) (*intrv1.GetLikeRanksResponse, error)
+	GetByIds(ctx context.Context, i *intrv1.GetByIdsRequest) (*intrv1.GetByIdsResponse, error)
 }
 
 type articleService struct {
 	repo     repository.ArticleRepository
 	producer readcount.ReadEventProducer
 	log      *zap.Logger
+}
+
+func NewArticleService(repo repository.ArticleRepository, producer readcount.ReadEventProducer, log *zap.Logger) ArticleService {
+	//logger.With(zap.String("type", "articleService"))
+	return &articleService{repo: repo, producer: producer, log: log}
+}
+
+func (a *articleService) GetByIds(ctx context.Context, i *intrv1.GetByIdsRequest) (*intrv1.GetByIdsResponse, error) {
+	return a.repo.GetByIds(ctx, i)
+}
+
+func (a *articleService) Unlike(c context.Context, i *intrv1.UnlikeRequest) (*intrv1.UnlikeResponse, error) {
+	return a.repo.Unlike(c, i)
+}
+
+func (a *articleService) Collect(ctx context.Context, i *intrv1.CollectRequest) (*intrv1.CollectResponse, error) {
+	return a.repo.Collect(ctx, i)
+}
+
+func (a *articleService) GetLikeRanks(c context.Context, i *intrv1.GetLikeRanksRequest) (*intrv1.GetLikeRanksResponse, error) {
+	return a.repo.GetLikeRanks(c, i)
+}
+
+func (a *articleService) Like(c context.Context, i *intrv1.LikeRequest) (*intrv1.LikeResponse, error) {
+	return a.repo.Like(c, i)
+}
+
+func (a *articleService) GetInteractive(ctx context.Context, request *intrv1.GetInteractiveRequest) (*intrv1.GetInteractiveResponse, error) {
+	return a.repo.GetInteractive(ctx, request)
 }
 
 func (a *articleService) ListPub(ctx context.Context, time time.Time, limit int, offset int) ([]domain.Article, error) {
@@ -93,11 +130,6 @@ func (a *articleService) GetArticlesByAuthor(ctx context.Context, uid int64, lim
 			Utime:    time.Unix(arts.Utime, 0).Format("2006-01-02 15:04:05"),
 		}
 	}), nil
-}
-
-func NewArticleService(repo repository.ArticleRepository, producer readcount.ReadEventProducer, log *zap.Logger) ArticleService {
-	//logger.With(zap.String("type", "articleService"))
-	return &articleService{repo: repo, producer: producer, log: log}
 }
 
 func (a *articleService) Withdraw(ctx context.Context, article domain.Article) error {

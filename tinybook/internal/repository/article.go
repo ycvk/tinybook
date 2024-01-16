@@ -6,8 +6,10 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 	"strconv"
 	"time"
+	intrv1 "tinybook/tinybook/api/proto/gen/intr/v1"
 	"tinybook/tinybook/internal/domain"
 	"tinybook/tinybook/internal/repository/cache"
 	"tinybook/tinybook/internal/repository/dao"
@@ -42,13 +44,43 @@ type ArticleRepository interface {
 	DelCache(ctx context.Context, key int64, articleType ArticleType) error
 	GetPubArticleById(ctx context.Context, id int64) (domain.Article, error)
 	ListPub(ctx context.Context, t time.Time, limit int, offset int) ([]domain.Article, error)
+	intrv1.InteractiveServiceClient
 }
 
 type CachedArticleRepository struct {
-	dao      dao.ArticleDAO
-	cache    cache.ArticleCache
-	userRepo UserRepository
-	log      *zap.Logger
+	dao                dao.ArticleDAO
+	cache              cache.ArticleCache
+	userRepo           UserRepository
+	log                *zap.Logger
+	interactiveService intrv1.InteractiveServiceClient
+}
+
+func (c *CachedArticleRepository) IncreaseReadCount(ctx context.Context, in *intrv1.IncreaseReadCountRequest, opts ...grpc.CallOption) (*intrv1.IncreaseReadCountResponse, error) {
+	return c.interactiveService.IncreaseReadCount(ctx, in, opts...)
+}
+
+func (c *CachedArticleRepository) Like(ctx context.Context, in *intrv1.LikeRequest, opts ...grpc.CallOption) (*intrv1.LikeResponse, error) {
+	return c.interactiveService.Like(ctx, in, opts...)
+}
+
+func (c *CachedArticleRepository) Unlike(ctx context.Context, in *intrv1.UnlikeRequest, opts ...grpc.CallOption) (*intrv1.UnlikeResponse, error) {
+	return c.interactiveService.Unlike(ctx, in, opts...)
+}
+
+func (c *CachedArticleRepository) Collect(ctx context.Context, in *intrv1.CollectRequest, opts ...grpc.CallOption) (*intrv1.CollectResponse, error) {
+	return c.interactiveService.Collect(ctx, in, opts...)
+}
+
+func (c *CachedArticleRepository) GetInteractive(ctx context.Context, in *intrv1.GetInteractiveRequest, opts ...grpc.CallOption) (*intrv1.GetInteractiveResponse, error) {
+	return c.interactiveService.GetInteractive(ctx, in, opts...)
+}
+
+func (c *CachedArticleRepository) GetLikeRanks(ctx context.Context, in *intrv1.GetLikeRanksRequest, opts ...grpc.CallOption) (*intrv1.GetLikeRanksResponse, error) {
+	return c.interactiveService.GetLikeRanks(ctx, in, opts...)
+}
+
+func (c *CachedArticleRepository) GetByIds(ctx context.Context, in *intrv1.GetByIdsRequest, opts ...grpc.CallOption) (*intrv1.GetByIdsResponse, error) {
+	return c.interactiveService.GetByIds(ctx, in, opts...)
 }
 
 func (c *CachedArticleRepository) ListPub(ctx context.Context, t time.Time, limit int, offset int) ([]domain.Article, error) {
@@ -250,8 +282,9 @@ func (c *CachedArticleRepository) GetArticlesByAuthor(ctx context.Context, uid i
 	}), nil
 }
 
-func NewCachedArticleRepository(dao dao.ArticleDAO, cache cache.ArticleCache, userRepo UserRepository, log *zap.Logger) ArticleRepository {
-	return &CachedArticleRepository{dao: dao, cache: cache, userRepo: userRepo, log: log}
+func NewCachedArticleRepository(dao dao.ArticleDAO, cache cache.ArticleCache,
+	userRepo UserRepository, log *zap.Logger, client intrv1.InteractiveServiceClient) ArticleRepository {
+	return &CachedArticleRepository{dao: dao, cache: cache, userRepo: userRepo, log: log, interactiveService: client}
 }
 
 func (c *CachedArticleRepository) SyncStatus(ctx context.Context, article domain.Article, articleStatus domain.ArticleStatus) error {

@@ -13,18 +13,16 @@ import (
 )
 
 type ArticleHandler struct {
-	articleService     service.ArticleService
-	interactiveService intrv1.InteractiveServiceClient
-	l                  *zap.Logger
-	biz                string
+	articleService service.ArticleService
+	l              *zap.Logger
+	biz            string
 }
 
-func NewArticleHandler(artService service.ArticleService, interService intrv1.InteractiveServiceClient, l *zap.Logger) *ArticleHandler {
+func NewArticleHandler(artService service.ArticleService, l *zap.Logger) *ArticleHandler {
 	return &ArticleHandler{
-		articleService:     artService,
-		interactiveService: interService,
-		l:                  l,
-		biz:                "article",
+		articleService: artService,
+		l:              l,
+		biz:            "article",
 	}
 }
 
@@ -227,7 +225,7 @@ func (h *ArticleHandler) PubDetail(context *gin.Context) {
 	eg.Go(func() error {
 		var interactiveErr error
 		claims := (context.MustGet("userClaims")).(jwt.UserClaims)
-		interactive, interactiveErr = h.interactiveService.GetInteractive(context, &intrv1.GetInteractiveRequest{
+		interactive, interactiveErr = h.articleService.GetInteractive(context, &intrv1.GetInteractiveRequest{
 			Biz:   h.biz,
 			BizId: id,
 			Uid:   claims.Uid,
@@ -283,13 +281,13 @@ func (h *ArticleHandler) Like(context *gin.Context) {
 	claims := (context.MustGet("userClaims")).(jwt.UserClaims)
 	var err error
 	if req.Like {
-		_, err = h.interactiveService.Like(context, &intrv1.LikeRequest{
+		_, err = h.articleService.Like(context, &intrv1.LikeRequest{
 			Biz:   h.biz,
 			BizId: req.Id,
 			Uid:   claims.Uid,
 		})
 	} else {
-		_, err = h.interactiveService.Unlike(context, &intrv1.UnlikeRequest{
+		_, err = h.articleService.Unlike(context, &intrv1.UnlikeRequest{
 			Biz:   h.biz,
 			BizId: req.Id,
 			Uid:   claims.Uid,
@@ -329,7 +327,7 @@ func (h *ArticleHandler) Collect(ctx *gin.Context) {
 		return
 	}
 	claims := (ctx.MustGet("userClaims")).(jwt.UserClaims)
-	_, err := h.interactiveService.Collect(ctx, &intrv1.CollectRequest{
+	_, err := h.articleService.Collect(ctx, &intrv1.CollectRequest{
 		Biz:   h.biz,
 		BizId: req.Id,
 		Cid:   req.Cid,
@@ -366,7 +364,7 @@ func (h *ArticleHandler) Rank(context *gin.Context) {
 		})
 		return
 	}
-	ranks, err := h.interactiveService.GetLikeRanks(context, &intrv1.GetLikeRanksRequest{
+	ranks, err := h.articleService.GetLikeRanks(context, &intrv1.GetLikeRanksRequest{
 		Biz: h.biz,
 		Num: num,
 	})

@@ -17,26 +17,24 @@ type RankingService interface {
 }
 
 type BatchRankingService struct {
-	InteractiveSvc intrv1.InteractiveServiceClient
-	ArticleSvc     ArticleService
-	BatchSize      int // 每次获取的文章数量
-	topNum         int // 排行榜数量
-	ScoreFunc      func(likeCount int64, utime time.Time) float64
-	queue          *priorityqueue.PriorityQueue[domain.Article, float64] // 优先队列
-	rankingRepo    repository.RankingRepository
+	ArticleSvc  ArticleService
+	BatchSize   int // 每次获取的文章数量
+	topNum      int // 排行榜数量
+	ScoreFunc   func(likeCount int64, utime time.Time) float64
+	queue       *priorityqueue.PriorityQueue[domain.Article, float64] // 优先队列
+	rankingRepo repository.RankingRepository
 }
 
 func (b *BatchRankingService) GetTopN(ctx context.Context) ([]domain.Article, error) {
 	return b.rankingRepo.GetTopN(ctx)
 }
 
-func NewBatchRankingService(interactiveSvc intrv1.InteractiveServiceClient, articleSvc ArticleService, repo repository.RankingRepository) RankingService {
+func NewBatchRankingService(articleSvc ArticleService, repo repository.RankingRepository) RankingService {
 	return &BatchRankingService{
-		InteractiveSvc: interactiveSvc,
-		ArticleSvc:     articleSvc,
-		BatchSize:      1000,
-		topNum:         100,
-		rankingRepo:    repo,
+		ArticleSvc:  articleSvc,
+		BatchSize:   1000,
+		topNum:      100,
+		rankingRepo: repo,
 		ScoreFunc: func(likeCount int64, utime time.Time) float64 {
 			return float64(likeCount-1) / math.Pow(time.Now().Sub(utime).Seconds()+2, 1.8)
 		},
@@ -71,7 +69,7 @@ func (b *BatchRankingService) topN(ctx context.Context) ([]domain.Article, error
 			return item.ID
 		})
 		// 根据id获取article的interactive
-		byIds, err := b.InteractiveSvc.GetByIds(ctx, &intrv1.GetByIdsRequest{
+		byIds, err := b.ArticleSvc.GetByIds(ctx, &intrv1.GetByIdsRequest{
 			Biz: "article",
 			Ids: ids,
 		})
