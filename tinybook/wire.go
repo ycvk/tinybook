@@ -10,6 +10,7 @@ import (
 	cache2 "tinybook/tinybook/interactive/repository/cache"
 	dao2 "tinybook/tinybook/interactive/repository/dao"
 	service2 "tinybook/tinybook/interactive/service"
+	readcount2 "tinybook/tinybook/internal/events/readcount"
 	"tinybook/tinybook/internal/job"
 	"tinybook/tinybook/internal/repository"
 	"tinybook/tinybook/internal/repository/cache"
@@ -74,7 +75,7 @@ func InitWebServer() *App {
 		// 初始化kafka writer
 		ioc.InitWriter,
 		// 初始化阅读数 read num kafka
-		readcount.NewKafkaReadCountProducer, readcount.NewKafkaReadCountConsumer,
+		readcount2.NewKafkaReadCountProducer, readcount.NewKafkaReadCountConsumer,
 		// 初始化点赞榜 like rank kafka
 		rank.NewKafkaLikeRankProducer, rank.NewKafkaLikeRankConsumer,
 		// 收集所有的consumer

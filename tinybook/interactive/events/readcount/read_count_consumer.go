@@ -14,7 +14,15 @@ import (
 	"tinybook/tinybook/interactive/repository"
 )
 
-const GroupArticleRead = "group-article-read"
+const (
+	GroupArticleRead = "group-article-read"
+	TopicArticleRead = "topic-article-read"
+)
+
+type ReadEvent struct {
+	ArticleID int64 `json:"article_id"`
+	UserID    int64 `json:"user_id"`
+}
 
 type ReadCountKafkaConsumer struct {
 	reader *kafka.Reader

@@ -6,8 +6,8 @@ import (
 	"go.uber.org/zap"
 	"strconv"
 	"time"
-	"tinybook/tinybook/interactive/events/readcount"
 	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/internal/events/readcount"
 	"tinybook/tinybook/internal/repository"
 )
 

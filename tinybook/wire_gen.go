@@ -9,11 +9,12 @@ package main
 import (
 	"github.com/google/wire"
 	"tinybook/tinybook/interactive/events/rank"
-	"tinybook/tinybook/interactive/events/readcount"
+	readcount2 "tinybook/tinybook/interactive/events/readcount"
 	repository2 "tinybook/tinybook/interactive/repository"
 	cache2 "tinybook/tinybook/interactive/repository/cache"
 	dao2 "tinybook/tinybook/interactive/repository/dao"
 	service2 "tinybook/tinybook/interactive/service"
+	"tinybook/tinybook/internal/events/readcount"
 	"tinybook/tinybook/internal/job"
 	"tinybook/tinybook/internal/repository"
 	"tinybook/tinybook/internal/repository/cache"
@@ -62,12 +63,12 @@ func InitWebServer() *App {
 	likeRankEventProducer := rank.NewKafkaLikeRankProducer(writer)
 	interactiveCache := cache2.NewRedisInteractiveCache(cmdable, logger, theineCache, likeRankEventProducer)
 	interactiveRepository := repository2.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, logger)
-	interactiveService := service2.NewInteractiveService(interactiveRepository, articleRepository, likeRankEventProducer, logger)
+	interactiveService := service2.NewInteractiveService(interactiveRepository, likeRankEventProducer, logger)
 	articleHandler := web.NewArticleHandler(articleService, interactiveService, logger)
 	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler)
-	readCountKafkaConsumer := readcount.NewKafkaReadCountConsumer(interactiveRepository, logger)
+	readCountKafkaConsumer := readcount2.NewKafkaReadCountConsumer(interactiveRepository, logger)
 	likeRankKafkaConsumer := rank.NewKafkaLikeRankConsumer(logger, theineCache, cmdable)
-	v2 := readcount.CollectConsumer(readCountKafkaConsumer, likeRankKafkaConsumer)
+	v2 := readcount2.CollectConsumer(readCountKafkaConsumer, likeRankKafkaConsumer)
 	rankingCache := cache.NewRedisRankingCache(cmdable)
 	rankingRepository := repository.NewCachedRankingRepository(rankingCache)
 	rankingService := service.NewBatchRankingService(interactiveService, articleService, rankingRepository)

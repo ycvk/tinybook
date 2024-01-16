@@ -8,9 +8,8 @@ import (
 	"strconv"
 	domain2 "tinybook/tinybook/interactive/domain"
 	"tinybook/tinybook/interactive/events/rank"
-	repository2 "tinybook/tinybook/interactive/repository"
+	"tinybook/tinybook/interactive/repository"
 	"tinybook/tinybook/internal/domain"
-	"tinybook/tinybook/internal/repository"
 )
 
 type InteractiveService interface {
@@ -24,8 +23,8 @@ type InteractiveService interface {
 }
 
 type interactiveService struct {
-	repo          repository2.InteractiveRepository
-	articleRepo   repository.ArticleRepository
+	repo repository.InteractiveRepository
+	//articleRepo   repository.ArticleRepository
 	likeRankEvent rank.LikeRankEventProducer
 	log           *zap.Logger
 }
@@ -54,11 +53,12 @@ func (i *interactiveService) GetLikeRanks(ctx context.Context, biz string, num i
 	for i2 := range likeRanks {
 		index := i2 // 这里需要注意，闭包问题
 		eg.Go(func() error {
-			// 获取单个文章详情
-			article, err := i.articleRepo.GetPubArticleById(ctx, likeRanks[index].BizId) // `GetPubArticleById`已经走了缓存，所以这里不用再走缓存了
-			if err != nil {
-				return err
-			}
+			// todo 获取单个文章详情
+			//article, err := i.articleRepo.GetPubArticleById(ctx, likeRanks[index].BizId) // `GetPubArticleById`已经走了缓存，所以这里不用再走缓存了
+			//if err != nil {
+			//	return err
+			//}
+			article := domain.Article{}
 			articles[index] = article // 这样赋值，可以保证与`likeRanks`的顺序一致
 			return nil
 		})
@@ -142,8 +142,13 @@ func (i *interactiveService) Unlike(ctx context.Context, biz string, id int64, u
 	return nil
 }
 
-func NewInteractiveService(repo repository2.InteractiveRepository, articleRepository repository.ArticleRepository, event rank.LikeRankEventProducer, logger *zap.Logger) InteractiveService {
-	return &interactiveService{repo: repo, articleRepo: articleRepository, likeRankEvent: event, log: logger}
+func NewInteractiveService(repo repository.InteractiveRepository, event rank.LikeRankEventProducer, logger *zap.Logger) InteractiveService {
+	return &interactiveService{
+		repo: repo,
+		//articleRepo:   articleRepository,
+		likeRankEvent: event,
+		log:           logger,
+	}
 }
 
 func (i *interactiveService) IncreaseReadCount(ctx context.Context, biz string, bizId int64) error {

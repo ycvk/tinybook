@@ -33,7 +33,14 @@ message ArticleVo {
     string status = 7;
     string ctime = 8;
     string utime = 9;
-    Interactive interactive = 10;
+    //    Interactive interactive = 10; 因为不能组合Interactive，所以只能拆开一个个字段
+    int64 biz_id = 11;
+    string biz = 12;
+    int64 read_count = 13;
+    int64 like_count = 14;
+    int64 collect_count = 15;
+    bool liked = 16;
+    bool collected = 17;
 }
 
 message GetLikeRanksRequest {
