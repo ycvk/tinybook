@@ -3,7 +3,6 @@ package priorityqueue
 import (
 	"container/heap"
 	"sync"
-	"time"
 )
 
 // HeapKind 指定堆类型 - 最小或最大
@@ -22,15 +21,13 @@ type Item[T comparable, V int64 | float64] struct {
 	Priority V
 	// 更新时需要索引 - 用于在更新元素优先级时, 快速定位元素在堆中的位置
 	index int
-	// 时间戳字段 - 用于记录元素的创建时间, 也用于在优先级相同时比较元素, 确保先入队的元素先出队
-	time int64
 }
 
 // PriorityQueue 基于容器/堆的优先级队列实现
 type PriorityQueue[T comparable, V int64 | float64] struct {
 	lock      sync.RWMutex
 	items     []*Item[T, V]
-	lookupMap map[T]*Item[T, V]
+	lookupMap map[T]int // 使用map来查找元素在堆中的位置，减少遍历时间
 	kind      HeapKind
 }
 
@@ -38,11 +35,10 @@ type PriorityQueue[T comparable, V int64 | float64] struct {
 func New[T comparable, V int64 | float64](kind HeapKind) *PriorityQueue[T, V] {
 	pq := &PriorityQueue[T, V]{
 		items:     make([]*Item[T, V], 0),
-		lookupMap: make(map[T]*Item[T, V]),
+		lookupMap: make(map[T]int),
 		kind:      kind,
 	}
 	heap.Init(pq) // 初始化堆
-
 	return pq
 }
 
@@ -53,14 +49,9 @@ func (pq *PriorityQueue[T, V]) Len() int {
 
 // Less implements sort.Interface
 func (pq *PriorityQueue[T, V]) Less(i, j int) bool {
-	// 当优先级相同的时候，比较时间戳
-	if pq.items[i].Priority == pq.items[j].Priority {
-		return pq.items[i].time < pq.items[j].time
-	}
 	if pq.kind == MinHeap {
 		return pq.items[i].Priority < pq.items[j].Priority
 	}
-
 	return pq.items[i].Priority > pq.items[j].Priority
 }
 
@@ -84,9 +75,8 @@ func (pq *PriorityQueue[T, V]) Pop() any {
 	old := pq.items
 	n := len(old)
 	item := old[n-1]
-	old[n-1] = nil  // 最后一个元素置空 - 避免内存泄漏
-	item.index = -1 // for safety
-	pq.items = old[0 : n-1]
+	pq.lookupMap[item.Value] = -1 // 标记元素已被删除，避免内存泄漏
+	delete(pq.lookupMap, item.Value)
 	return item
 }
 
@@ -94,24 +84,14 @@ func (pq *PriorityQueue[T, V]) Pop() any {
 func (pq *PriorityQueue[T, V]) Put(value T, priority V) {
 	pq.lock.Lock()
 	defer pq.lock.Unlock()
-	item := &Item[T, V]{
-		Value:    value,
-		Priority: priority,
-		time:     time.Now().UnixNano(),
+	if _, ok := pq.lookupMap[value]; !ok { // 如果元素已存在，则不添加
+		item := &Item[T, V]{
+			Value:    value,
+			Priority: priority,
+		}
+		pq.lookupMap[value] = len(pq.items)
+		heap.Push(pq, item)
 	}
-	pq.lookupMap[value] = item
-
-	heap.Push(pq, item)
-}
-
-// PutItem 将指定优先级的值添加到优先级队列中
-func (pq *PriorityQueue[T, V]) PutItem(item *Item[T, V]) {
-	pq.lock.Lock()
-	defer pq.lock.Unlock()
-
-	item.time = time.Now().UnixNano()
-	pq.lookupMap[item.Value] = item
-	heap.Push(pq, item)
 }
 
 // Get 返回优先级队列中的下一个元素
@@ -122,7 +102,6 @@ func (pq *PriorityQueue[T, V]) Get() *Item[T, V] {
 	pq.lock.Lock()
 	defer pq.lock.Unlock()
 	item := heap.Pop(pq).(*Item[T, V])
-	delete(pq.lookupMap, item.Value)
 	return item
 }
 
@@ -130,36 +109,24 @@ func (pq *PriorityQueue[T, V]) Get() *Item[T, V] {
 func (pq *PriorityQueue[T, V]) IsEmpty() bool {
 	pq.lock.RLock()
 	defer pq.lock.RUnlock()
-	return pq.Len() == 0
+	return len(pq.items) == 0
 }
 
 // Update 更新与给定值关联的优先级
 func (pq *PriorityQueue[T, V]) Update(value T, priority V) bool {
 	pq.lock.Lock()
 	defer pq.lock.Unlock()
-
-	item, ok := pq.lookupMap[value]
-	if ok {
-		item.Priority = priority
-		heap.Fix(pq, item.index)
+	if index, ok := pq.lookupMap[value]; ok { // 如果元素存在，则更新优先级并调整堆
+		pq.items[index].Priority = priority
+		heap.Fix(pq, index)
 	}
-	return ok
+	return false
 }
 
 // Clear 清空优先级队列
 func (pq *PriorityQueue[T, V]) Clear() {
 	pq.lock.Lock()
 	defer pq.lock.Unlock()
-
-	pq.items = pq.items[:0]
-	pq.lookupMap = make(map[T]*Item[T, V])
-}
-
-// Destroy 销毁优先级队列
-func (pq *PriorityQueue[T, V]) Destroy() {
-	pq.lock.Lock()
-	defer pq.lock.Unlock()
-
 	pq.items = nil
-	pq.lookupMap = nil
+	pq.lookupMap = make(map[T]int)
 }
