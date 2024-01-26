@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"time"
 	intrv1 "tinybook/tinybook/api/proto/gen/intr/v1"
-	"tinybook/tinybook/internal/domain"
-	"tinybook/tinybook/internal/events/readcount"
-	"tinybook/tinybook/internal/repository"
+	"tinybook/tinybook/article/domain"
+	"tinybook/tinybook/article/events/readcount"
+	"tinybook/tinybook/article/repository"
 )
 
 type ArticleService interface {

@@ -6,7 +6,8 @@ import (
 	"math"
 	"time"
 	intrv1 "tinybook/tinybook/api/proto/gen/intr/v1"
-	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/article/domain"
+	"tinybook/tinybook/article/service"
 	"tinybook/tinybook/internal/repository"
 	"tinybook/tinybook/pkg/priorityqueue"
 )
@@ -17,7 +18,7 @@ type RankingService interface {
 }
 
 type BatchRankingService struct {
-	ArticleSvc  ArticleService
+	ArticleSvc  service.ArticleService
 	BatchSize   int // 每次获取的文章数量
 	topNum      int // 排行榜数量
 	ScoreFunc   func(likeCount int64, utime time.Time) float64
@@ -29,7 +30,7 @@ func (b *BatchRankingService) GetTopN(ctx context.Context) ([]domain.Article, er
 	return b.rankingRepo.GetTopN(ctx)
 }
 
-func NewBatchRankingService(articleSvc ArticleService, repo repository.RankingRepository) RankingService {
+func NewBatchRankingService(articleSvc service.ArticleService, repo repository.RankingRepository) RankingService {
 	return &BatchRankingService{
 		ArticleSvc:  articleSvc,
 		BatchSize:   1000,
@@ -86,8 +87,7 @@ func (b *BatchRankingService) topN(ctx context.Context) ([]domain.Article, error
 				// 如果当前元素大于最小元素，则替换最小元素
 				// 否则，跳过当前元素
 				queueMin := b.queue.Get()
-				if score < queueMin.Priority { // 当前元素小于最小元素 放回去
-					b.queue.PutItem(queueMin)
+				if score < queueMin.Priority { // 当前元素小于最小元素
 					continue
 				}
 				b.queue.Put(article, score)

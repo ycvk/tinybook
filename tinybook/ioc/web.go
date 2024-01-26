@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 	"strings"
 	"time"
+	web2 "tinybook/tinybook/article/web"
 	"tinybook/tinybook/internal/web"
 	"tinybook/tinybook/internal/web/jwt"
 	"tinybook/tinybook/internal/web/middleware"
@@ -21,7 +22,7 @@ import (
 )
 
 func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler,
-	wechatHandler *web.OAuth2WechatHandler, articleHandler *web.ArticleHandler) *gin.Engine {
+	wechatHandler *web.OAuth2WechatHandler, articleHandler *web2.ArticleHandler) *gin.Engine {
 	engine := gin.Default()
 	// 注册中间件
 	engine.Use(handlerFunc...)

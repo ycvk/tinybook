@@ -10,9 +10,10 @@ import (
 	"strconv"
 	"time"
 	intrv1 "tinybook/tinybook/api/proto/gen/intr/v1"
-	"tinybook/tinybook/internal/domain"
-	"tinybook/tinybook/internal/repository/cache"
-	"tinybook/tinybook/internal/repository/dao"
+	"tinybook/tinybook/article/domain"
+	"tinybook/tinybook/article/repository/cache"
+	"tinybook/tinybook/article/repository/dao"
+	"tinybook/tinybook/internal/repository"
 )
 
 const (
@@ -50,7 +51,7 @@ type ArticleRepository interface {
 type CachedArticleRepository struct {
 	dao                dao.ArticleDAO
 	cache              cache.ArticleCache
-	userRepo           UserRepository
+	userRepo           repository.UserRepository
 	log                *zap.Logger
 	interactiveService intrv1.InteractiveServiceClient
 }
@@ -283,7 +284,7 @@ func (c *CachedArticleRepository) GetArticlesByAuthor(ctx context.Context, uid i
 }
 
 func NewCachedArticleRepository(dao dao.ArticleDAO, cache cache.ArticleCache,
-	userRepo UserRepository, log *zap.Logger, client intrv1.InteractiveServiceClient) ArticleRepository {
+	userRepo repository.UserRepository, log *zap.Logger, client intrv1.InteractiveServiceClient) ArticleRepository {
 	return &CachedArticleRepository{dao: dao, cache: cache, userRepo: userRepo, log: log, interactiveService: client}
 }
 

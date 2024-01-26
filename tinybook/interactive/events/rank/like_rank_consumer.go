@@ -32,13 +32,12 @@ var (
 )
 
 type LikeRankKafkaConsumer struct {
-	reader    *kafka.Reader
-	log       *zap.Logger
-	cli       *theine.Cache[string, any]
-	redisCli  redis.Cmdable
-	mu        sync.Mutex // 用于同步
-	timer     *time.Timer
-	isWaiting bool
+	reader   *kafka.Reader
+	log      *zap.Logger
+	cli      *theine.Cache[string, any]
+	redisCli redis.Cmdable
+	mu       sync.Mutex // 用于同步
+	timer    *time.Ticker
 }
 
 func NewKafkaLikeRankConsumer(log *zap.Logger, cli *theine.Cache[string, any], redisCli redis.Cmdable) *LikeRankKafkaConsumer {
@@ -46,12 +45,11 @@ func NewKafkaLikeRankConsumer(log *zap.Logger, cli *theine.Cache[string, any], r
 	collector := kafkax.NewReaderCollector(reader) // 用于收集 Kafka 读取器的统计信息
 	prometheus.MustRegister(collector)             // 注册 Prometheus
 	return &LikeRankKafkaConsumer{
-		log:       log,
-		reader:    reader,
-		cli:       cli,
-		redisCli:  redisCli,
-		timer:     nil,
-		isWaiting: false,
+		log:      log,
+		reader:   reader,
+		cli:      cli,
+		redisCli: redisCli,
+		timer:    nil,
 	}
 }
 
@@ -77,38 +75,42 @@ func (k *LikeRankKafkaConsumer) Consume(ctx context.Context) {
 		}
 	}(k.reader)
 	for {
-		// 读取消息
-		message, err := k.reader.FetchMessage(ctx)
-		if err != nil {
-			k.log.Error("read message failed", zap.Error(err))
-			continue
+		select {
+		case <-ctx.Done():
+			k.log.Info("Closing kafka like rank consumer")
+			return
+		default:
+			// 读取消息
+			message, err := k.reader.FetchMessage(ctx)
+			if err != nil {
+				k.log.Error("read message failed", zap.Error(err))
+				continue
+			}
+			// 解析消息
+			var event LikeRankEvent
+			err = sonic.Unmarshal(message.Value, &event)
+			if err != nil {
+				k.log.Error("like rank consumer unmarshal message failed", zap.Error(err))
+				continue
+			}
+			// 设置redis缓存更新标志位
+			if event.Change {
+				k.Call(func() { k.redisCli.Set(ctx, LikeRankLocalFlag, 1, 0) }, TimeToCommitOffset)
+			}
+			// 确保每次循环后都会提交 offset
+			if err := k.reader.CommitMessages(ctx, message); err != nil {
+				k.log.Error("commit message failed", zap.Error(err))
+			}
 		}
-		// 解析消息
-		var event LikeRankEvent
-		err = sonic.Unmarshal(message.Value, &event)
-		if err != nil {
-			k.log.Error("like rank consumer unmarshal message failed", zap.Error(err))
-			continue
-		}
-		// 设置redis缓存更新标志位
-		if event.Change {
-			k.Call(func() { k.redisCli.Set(ctx, LikeRankLocalFlag, 1, 0) }, TimeToCommitOffset)
-		}
-		// 提交offset
-		err = k.reader.CommitMessages(ctx, message)
 	}
 }
 
 func InitReader(groupId string, topic string) *kafka.Reader {
-	type config struct {
-		Brokers string `yaml:"brokers"`
+	brokers := viper.GetString("kafka.brokers")
+	if brokers == "" {
+		panic("kafka brokers is empty")
 	}
-	var cfg config
-	err := viper.UnmarshalKey("kafka", &cfg)
-	if err != nil {
-		panic(err)
-	}
-	split := strings.Split(cfg.Brokers, ",")
+	split := strings.Split(brokers, ",")
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:        split,
 		GroupID:        groupId,
@@ -167,25 +169,29 @@ func (k *LikeRankKafkaConsumer) Ticker(ctx context.Context, duration time.Durati
 	}
 tickerEnd:
 	k.log.Info("consumer ticker end")
+	k.Stop() // 停止定时执行call函数的计时器
 	return
 }
 
 // Call 执行函数，但保证在给定时间内最多执行一次
 func (k *LikeRankKafkaConsumer) Call(f func(), duration time.Duration) {
-	k.mu.Lock()
-
-	if k.isWaiting {
-		k.mu.Unlock()
-		return
+	if k.timer == nil {
+		// 如果还未运行,则初始化计时器
+		k.timer = time.NewTicker(duration)
+		go func() {
+			for {
+				select {
+				case <-k.timer.C:
+					f()
+				}
+			}
+		}()
 	}
-	k.isWaiting = true
-	k.mu.Unlock()
+}
 
-	go func() {
-		f()
-		time.Sleep(duration)
-		k.mu.Lock()
-		k.isWaiting = false
-		k.mu.Unlock()
-	}()
+// Stop 停止定时执行call函数的计时器
+func (k *LikeRankKafkaConsumer) Stop() {
+	if k.timer != nil {
+		k.timer.Stop()
+	}
 }

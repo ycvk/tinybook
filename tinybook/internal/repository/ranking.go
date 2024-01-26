@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/article/domain"
 	"tinybook/tinybook/internal/repository/cache"
 )
 

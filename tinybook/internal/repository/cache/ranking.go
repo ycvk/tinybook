@@ -7,7 +7,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/redis/go-redis/v9"
 	"time"
-	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/article/domain"
 )
 
 type RankingCache interface {

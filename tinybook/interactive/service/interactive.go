@@ -6,10 +6,10 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"strconv"
+	"tinybook/tinybook/article/domain"
 	domain2 "tinybook/tinybook/interactive/domain"
 	"tinybook/tinybook/interactive/events/rank"
 	"tinybook/tinybook/interactive/repository"
-	"tinybook/tinybook/internal/domain"
 )
 
 type InteractiveService interface {

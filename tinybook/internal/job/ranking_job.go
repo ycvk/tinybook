@@ -19,10 +19,10 @@ type RankingJob struct {
 	key        string
 
 	// TODO:这是用来模拟负载的，实际使用时需要删除
-	load      int32                    // 节点负载
-	threshold int32                    // 节点负载阈值
-	Id        string                   // 节点ID
-	hashRing  *hashring.ConsistentHash // 一致性哈希环
+	load      int32                       // 节点负载
+	threshold int32                       // 节点负载阈值
+	Id        string                      // 节点ID
+	hashRing  hashring.ConsistentHashRing // 一致性哈希环
 }
 
 func NewRankingJob(rankingSvc service.RankingService, t time.Duration, lock *redislock.Client, l *zap.Logger) *RankingJob {
@@ -47,10 +47,7 @@ func NewRankingJob(rankingSvc service.RankingService, t time.Duration, lock *red
 		}
 	}()
 	// 初始化一致性哈希环
-	ch := &hashring.ConsistentHash{
-		Ring:  make(hashring.HashRing, 0),
-		Nodes: make(hashring.NodeMap),
-	}
+	ch := hashring.NewHashRing()
 	// 添加节点
 	ch.AddNode(hashring.Node{ID: r.Id, Load: r.load})
 	// 定时(10s)更新哈希环中的节点负载

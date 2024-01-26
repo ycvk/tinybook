@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strconv"
 	intrv1 "tinybook/tinybook/api/proto/gen/intr/v1"
-	"tinybook/tinybook/internal/domain"
-	"tinybook/tinybook/internal/service"
+	"tinybook/tinybook/article/domain"
+	"tinybook/tinybook/article/service"
 	"tinybook/tinybook/internal/web/jwt"
 )
 

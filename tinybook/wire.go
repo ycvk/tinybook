@@ -4,13 +4,18 @@ package main
 
 import (
 	"github.com/google/wire"
+	readcount2 "tinybook/tinybook/article/events/readcount"
+	repository3 "tinybook/tinybook/article/repository"
+	cache3 "tinybook/tinybook/article/repository/cache"
+	dao3 "tinybook/tinybook/article/repository/dao"
+	service3 "tinybook/tinybook/article/service"
+	web2 "tinybook/tinybook/article/web"
 	"tinybook/tinybook/interactive/events/rank"
 	"tinybook/tinybook/interactive/events/readcount"
 	repository2 "tinybook/tinybook/interactive/repository"
 	cache2 "tinybook/tinybook/interactive/repository/cache"
 	dao2 "tinybook/tinybook/interactive/repository/dao"
 	service2 "tinybook/tinybook/interactive/service"
-	readcount2 "tinybook/tinybook/internal/events/readcount"
 	"tinybook/tinybook/internal/job"
 	"tinybook/tinybook/internal/repository"
 	"tinybook/tinybook/internal/repository/cache"
@@ -63,7 +68,7 @@ func InitWebServer() *App {
 		// 初始化sms模块
 		ioc.InitSMSService, repository.NewGormSMSRepository, dao.NewGormSMSDAO,
 		// 初始化article模块
-		repository.NewCachedArticleRepository, dao.NewMongoDBArticleDAO, service.NewArticleService, cache.NewRedisArticleCache,
+		repository3.NewCachedArticleRepository, dao3.NewMongoDBArticleDAO, service3.NewArticleService, cache3.NewRedisArticleCache,
 		// 初始化interactive模块
 		interactiveServiceProvider,
 		// 初始化oauth2模块
@@ -72,7 +77,7 @@ func InitWebServer() *App {
 		rankingServiceProvider, ioc.InitJobs, ioc.InitRankingJob,
 		// 初始化handler
 		web.NewUserHandler, web.NewOAuth2WechatHandler, jwt.NewRedisJWTHandler,
-		web.NewArticleHandler,
+		web2.NewArticleHandler,
 		// 初始化web 和 中间件
 		ioc.InitWebServer, ioc.InitHandlerFunc, ioc.InitLogger,
 		// 初始化kafka writer
