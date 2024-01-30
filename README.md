@@ -14,6 +14,7 @@ Golang class homework in Geek Space.
 - [Chapter08: 为消息队列添加监控](#chapter08-为消息队列添加监控)
 - [Chapter09: 选择最合适的节点](#chapter09-选择最合适的节点)
 - [Chapter10: 在repository层面聚合grpc服务](#chapter10-在repository层面聚合grpc服务)
+- [Chapter11: 数据校验的批量接口](#chapter11-数据校验的批量接口)
 
 ---
 
@@ -849,3 +850,45 @@ Interactive 相关的组装。
   在handler中，去掉了所有对grpc服务的依赖，只保留了对`article_service`的依赖，`article_service`中依赖了`article_repository`
   ，而`article_repository`中依赖了grpc服务的client接口。
   以此来实现了在repository层面聚合grpc服务的目的。
+
+
+<h2 id="Chapter11">Chapter11: 数据校验的批量接口</h2>
+
+[GitHub Link](https://github.com/ycvk/tinybook/tree/dev9)
+
+### 背景要求
+
+在 Validator 里面，base -> target 的这个过程，都是一条条取出来比较的。
+
+现在需要修改为批量接口。
+
+也就是，从 base 中取一批，而后从 target 里面找出对应的数据，比较是否相等。
+
+### 设计实现
+
+#### 1. 引入 `batchSize` 参数到 `Validator` 结构体
+
+当前代码是逐条比较 base 和 target 中的记录。为实现批量处理，我们需要更改 validateBaseToTarget 函数，使其能够一次处理多条记录。
+
+首先，引入 batchSize 参数到 Validator 结构体。这个参数将决定每次从数据库中检索的记录数量。
+
+```go
+type Validator[T migrator.Entity] struct {
+    // ... 其他字段 ...
+    batchSize int
+}
+```
+
+#### 2. 修改 `validateBaseToTarget` 逻辑
+
+重写 `validateBaseToTarget` 函数以支持批量处理。
+
+- 用 `batchSize` 替换原来的单条记录处理逻辑。
+- 从 `base` 数据库中获取一批记录。
+- 对于每批获取的记录，使用它们的 `ID` 从 `target` 数据库中找到对应的记录。
+- 比较这两批记录是否存在或相等。
+- 根据比较结果，发送相应的`notify()`消息队列事件。
+
+具体代码实现链接如下:
+
+- [validator](https://github.com/ycvk/tinybook/blob/b904388bc18712a0b08ebb18a42602d81dd9ab5e/tinybook/pkg/migrator/validator/validator.go#L38-L88)
