@@ -18,7 +18,7 @@ type Validator[T migrator.Entity] struct {
 	target *gorm.DB
 	log    *zap.Logger
 
-	producer  events2.Producer
+	producer  events2.Producer // kafka事件生产者
 	direction string
 	batchSize int
 }
@@ -36,37 +36,55 @@ func (v *Validator[T]) Validate(ctx context.Context) error {
 
 // ValidateBaseToTarget 验证 base 和 target 是否一致 (base -> target)
 func (v *Validator[T]) validateBaseToTarget(ctx context.Context) error {
-	offset := -1
+	offset := 0
 	for {
-		offset++
-		var src T
-		err := v.base.WithContext(ctx).Order("id").Offset(offset).Limit(1).Find(&src).Error
+		var srcBatch []T
+		err := v.base.WithContext(ctx).Order("id").Offset(offset).Limit(v.batchSize).Find(&srcBatch).Error
 		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) { // 未找到记录
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil
 			}
-			v.log.Error("base -> target validate failed", zap.Error(err))
-			continue // 未知错误
+			v.log.Error("base -> target batch validate failed", zap.Error(err))
+			return err
 		}
-		var dst T
-		err = v.target.WithContext(ctx).Where("id=?", src.ID()).Find(&dst).Error
-		switch {
-		case err == nil: // 找到记录
-			if !src.CompareTo(dst) {
-				v.log.Error("base -> target compare failed, src: "+strconv.FormatInt(src.ID(), 10), zap.Error(err))
-				v.notify(src.ID(), events2.InconsistentEventTypeNotEqual)
+		// 如果 srcBatch 为空, 说明已经到了最后一批
+		if len(srcBatch) == 0 {
+			break
+		}
+
+		// 获取ID列表
+		ids := lo.Map(srcBatch, func(t T, _ int) int64 {
+			return t.ID()
+		})
+
+		var dstBatch []T
+		err = v.target.WithContext(ctx).Where("id IN ?", ids).Find(&dstBatch).Error
+		if err != nil {
+			v.log.Error("base -> target batch find in target failed", zap.Error(err))
+			return err
+		}
+
+		// 创建ID到Entity的映射以便比较
+		dstMap := make(map[int64]T, len(dstBatch))
+		for _, dst := range dstBatch {
+			dstMap[dst.ID()] = dst
+		}
+
+		// 对比base和target的记录
+		for _, src := range srcBatch {
+			dst, ok := dstMap[src.ID()]
+			if !ok { // target 中不存在的记录
+				v.notify(src.ID(), events2.InconsistentEventTypeTargetMiss)
 				continue
 			}
-		case errors.Is(err, gorm.ErrRecordNotFound): // 未找到记录
-			v.log.Error("base -> target not found, src: "+strconv.FormatInt(src.ID(), 10), zap.Error(err))
-			// 通知不一致事件 (base 中存在但 target 中不存在的记录)
-			v.notify(src.ID(), events2.InconsistentEventTypeTargetMiss)
-			continue
-		default:
-			v.log.Error("base -> target find failed", zap.Error(err))
-			continue // 未知错误
+			if !src.CompareTo(dst) { // target 中存在但不一致的记录
+				v.notify(src.ID(), events2.InconsistentEventTypeNotEqual)
+			}
 		}
+
+		offset += len(srcBatch)
 	}
+	return nil
 }
 
 func (v *Validator[T]) validateTargetToBase(ctx context.Context) error {
