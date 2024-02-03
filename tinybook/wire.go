@@ -10,12 +10,7 @@ import (
 	dao3 "tinybook/tinybook/article/repository/dao"
 	service3 "tinybook/tinybook/article/service"
 	web2 "tinybook/tinybook/article/web"
-	"tinybook/tinybook/interactive/events/rank"
-	"tinybook/tinybook/interactive/events/readcount"
-	repository2 "tinybook/tinybook/interactive/repository"
-	cache2 "tinybook/tinybook/interactive/repository/cache"
-	dao2 "tinybook/tinybook/interactive/repository/dao"
-	service2 "tinybook/tinybook/interactive/service"
+	"tinybook/tinybook/internal/events/consumer"
 	"tinybook/tinybook/internal/job"
 	"tinybook/tinybook/internal/repository"
 	"tinybook/tinybook/internal/repository/cache"
@@ -35,13 +30,15 @@ var rankingServiceProvider = wire.NewSet(
 
 // interactive 互动服务
 var interactiveServiceProvider = wire.NewSet(
-	cache2.NewRedisInteractiveCache,
-	dao2.NewGormInteractiveDAO,
-	repository2.NewCachedInteractiveRepository,
-	service2.NewInteractiveService,
+	// 本地 interactive
+	//cache2.NewRedisInteractiveCache,
+	//dao2.NewGormInteractiveDAO,
+	//repository2.NewCachedInteractiveRepository,
+	//service2.NewInteractiveService,
 
 	// 远程grpc interactive
-	ioc.InitIntrClient,
+	//ioc.InitIntrClient,// 本地和远程服务的联合调用
+	ioc.InitIntrClientV1, // 只远程服务的调用
 )
 
 // job 服务
@@ -61,6 +58,8 @@ func InitWebServer() *App {
 		ioc.InitRedis, ioc.InitDB, ioc.InitLocalCache, ioc.InitMongoDB, ioc.InitMongoDBV2,
 		// 初始化redisLock
 		ioc.InitRedisLock,
+		// 初始化etcd client
+		ioc.InitEtcd,
 		// 初始化user模块
 		cache.NewRedisUserCache, dao.NewGormUserDAO, repository.NewCachedUserRepository, service.NewUserService,
 		// 初始化code模块
@@ -82,12 +81,13 @@ func InitWebServer() *App {
 		ioc.InitWebServer, ioc.InitHandlerFunc, ioc.InitLogger,
 		// 初始化kafka writer
 		ioc.InitWriter,
-		// 初始化阅读数 read num kafka
-		readcount2.NewKafkaReadCountProducer, readcount.NewKafkaReadCountConsumer,
-		// 初始化点赞榜 like rank kafka
-		rank.NewKafkaLikeRankProducer, rank.NewKafkaLikeRankConsumer,
+		// 初始化阅读数 read num kafka 生产者
+		readcount2.NewKafkaReadCountProducer,
+		//readcount.NewKafkaReadCountConsumer,
+		// 初始化点赞榜 like rank kafka for interactive
+		//rank.NewKafkaLikeRankProducer, rank.NewKafkaLikeRankConsumer,
 		// 收集所有的consumer
-		readcount.CollectConsumer,
+		consumer.CollectConsumer,
 
 		// 初始化job
 		jobServiceProvider,

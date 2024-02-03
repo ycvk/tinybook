@@ -91,9 +91,6 @@ func (pq *PriorityQueue[T, P]) Put(value T, priority P) {
 func (pq *PriorityQueue[T, P]) Get() *Item[T, P] {
 	pq.lock.RLock()
 	defer pq.lock.RUnlock()
-	if pq.Len() == 0 {
-		return nil
-	}
 	return pq.items[0] // 直接返回堆顶元素
 }
 
@@ -101,14 +98,7 @@ func (pq *PriorityQueue[T, P]) Get() *Item[T, P] {
 func (pq *PriorityQueue[T, P]) GetAndPop() *Item[T, P] {
 	pq.lock.Lock()
 	defer pq.lock.Unlock()
-	// 检查队列是否为空
-	if pq.Len() == 0 {
-		return nil
-	}
-	// 弹出堆顶元素
-	item := heap.Pop(pq).(*Item[T, P])
-	// 这里不需要手动从 lookupMap 中删除元素，因为 Pop 方法已经处理了
-	return item
+	return heap.Pop(pq).(*Item[T, P])
 }
 
 // IsEmpty 检查优先级队列是否为空

@@ -9,17 +9,12 @@ package main
 import (
 	"github.com/google/wire"
 	"tinybook/tinybook/article/events/readcount"
-	repository3 "tinybook/tinybook/article/repository"
+	repository2 "tinybook/tinybook/article/repository"
 	cache2 "tinybook/tinybook/article/repository/cache"
 	dao2 "tinybook/tinybook/article/repository/dao"
-	service3 "tinybook/tinybook/article/service"
+	service2 "tinybook/tinybook/article/service"
 	web2 "tinybook/tinybook/article/web"
-	"tinybook/tinybook/interactive/events/rank"
-	readcount2 "tinybook/tinybook/interactive/events/readcount"
-	repository2 "tinybook/tinybook/interactive/repository"
-	cache3 "tinybook/tinybook/interactive/repository/cache"
-	dao3 "tinybook/tinybook/interactive/repository/dao"
-	service2 "tinybook/tinybook/interactive/service"
+	"tinybook/tinybook/internal/events/consumer"
 	"tinybook/tinybook/internal/job"
 	"tinybook/tinybook/internal/repository"
 	"tinybook/tinybook/internal/repository/cache"
@@ -60,26 +55,20 @@ func InitWebServer() *App {
 	conn := ioc.InitMongoDBV2()
 	articleDAO := dao2.NewMongoDBArticleDAO(database, conn)
 	articleCache := cache2.NewRedisArticleCache(cmdable)
-	interactiveDAO := dao3.NewGormInteractiveDAO(db)
+	client := ioc.InitEtcd()
+	interactiveServiceClient := ioc.InitIntrClientV1(client)
+	articleRepository := repository2.NewCachedArticleRepository(articleDAO, articleCache, userRepository, logger, interactiveServiceClient)
 	writer := ioc.InitWriter()
-	likeRankEventProducer := rank.NewKafkaLikeRankProducer(writer)
-	interactiveCache := cache3.NewRedisInteractiveCache(cmdable, logger, theineCache, likeRankEventProducer)
-	interactiveRepository := repository2.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, logger)
-	interactiveService := service2.NewInteractiveService(interactiveRepository, likeRankEventProducer, logger)
-	interactiveServiceClient := ioc.InitIntrClient(interactiveService)
-	articleRepository := repository3.NewCachedArticleRepository(articleDAO, articleCache, userRepository, logger, interactiveServiceClient)
 	readEventProducer := readcount.NewKafkaReadCountProducer(writer)
-	articleService := service3.NewArticleService(articleRepository, readEventProducer, logger)
+	articleService := service2.NewArticleService(articleRepository, readEventProducer, logger)
 	articleHandler := web2.NewArticleHandler(articleService, logger)
 	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler)
-	readCountKafkaConsumer := readcount2.NewKafkaReadCountConsumer(interactiveRepository, logger)
-	likeRankKafkaConsumer := rank.NewKafkaLikeRankConsumer(logger, theineCache, cmdable)
-	v2 := readcount2.CollectConsumer(readCountKafkaConsumer, likeRankKafkaConsumer)
+	v2 := consumer.CollectConsumer()
 	rankingCache := cache.NewRedisRankingCache(cmdable)
 	rankingRepository := repository.NewCachedRankingRepository(rankingCache)
 	rankingService := service.NewBatchRankingService(articleService, rankingRepository)
-	client := ioc.InitRedisLock(cmdable)
-	rankingJob := ioc.InitRankingJob(rankingService, client, logger)
+	redislockClient := ioc.InitRedisLock(cmdable)
+	rankingJob := ioc.InitRankingJob(rankingService, redislockClient, logger)
 	cron := ioc.InitJobs(logger, rankingJob)
 	cronJobDao := dao.NewGormCronJobDao(db)
 	cronJobRepository := repository.NewCronJobRepository(cronJobDao)
@@ -100,7 +89,7 @@ func InitWebServer() *App {
 var rankingServiceProvider = wire.NewSet(cache.NewRedisRankingCache, repository.NewCachedRankingRepository, service.NewBatchRankingService)
 
 // interactive 互动服务
-var interactiveServiceProvider = wire.NewSet(cache3.NewRedisInteractiveCache, dao3.NewGormInteractiveDAO, repository2.NewCachedInteractiveRepository, service2.NewInteractiveService, ioc.InitIntrClient)
+var interactiveServiceProvider = wire.NewSet(ioc.InitIntrClientV1)
 
 // job 服务
 var jobServiceProvider = wire.NewSet(service.NewCronJobService, repository.NewCronJobRepository, dao.NewGormCronJobDao, job.NewScheduler, job.NewLocalFuncExecutor)

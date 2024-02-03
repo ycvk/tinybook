@@ -39,7 +39,7 @@ func InitInteractiveApp() *App {
 	v := readcount.CollectConsumer(readCountKafkaConsumer, likeRankKafkaConsumer)
 	interactiveService := service.NewInteractiveService(interactiveRepository, likeRankEventProducer, logger)
 	interactiveServiceServer := grpc.NewInteractiveServiceServer(interactiveService)
-	server := ioc.InitGrpcServer(interactiveServiceServer)
+	server := ioc.InitGrpcServer(interactiveServiceServer, logger)
 	app := &App{
 		consumers: v,
 		server:    server,

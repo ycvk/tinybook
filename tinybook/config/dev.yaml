@@ -13,8 +13,14 @@ kafka:
   brokers: "bj.ycvk.app:9192,bj.ycvk.app:9292,bj.ycvk.app:9392"
 grpc:
   server:
-    addr: "localhost:8090"
+    etcdAddr: "localhost:32379"
+    name: "interactive"
+    port: 8090
   client:
     intr:
-      addr: "localhost:8090"
-      threshold: "10"
+      addr: "etcd:///service/interactive"
+      threshold: "30"
+
+etcd:
+  addrs:
+    - "localhost:32379"
