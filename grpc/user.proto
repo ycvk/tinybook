@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+option go_package = "github.com/ycvk/tinybook";
+
+message User {
+    int64 id = 1;
+    int32 age = 2;
+    map<string, string> ext = 3;
+    repeated string tags = 4;
+    optional string name = 5;
+    oneof valid {
+        string email = 6;
+        string phone = 7;
+    }
+    repeated Address addresses = 8;
+    Gender gender = 9;
+}
+
+message Address {
+    string country = 1;
+    string province = 2;
+    string city = 3;
+    string street = 4;
+    uint32 zip = 5;
+}
+
+enum Gender {
+    GENDER_UNKNOWN = 0;
+    GENDER_MALE = 1;
+    GENDER_FEMALE = 2;
+}
+
+service UserService {
+    rpc GetUser (GetUserRequest) returns (User) {}
+    rpc GetUserList (GetUserListRequest) returns (stream User) {}
+}
+
+message GetUserRequest {
+    int64 id = 1;
+}
+
+message GetUserListRequest {
+    repeated int64 ids = 1;
+}
