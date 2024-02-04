@@ -15,6 +15,7 @@ Golang class homework in Geek Space.
 - [Chapter09: 选择最合适的节点](#chapter09-选择最合适的节点)
 - [Chapter10: 在repository层面聚合grpc服务](#chapter10-在repository层面聚合grpc服务)
 - [Chapter11: 数据校验的批量接口](#chapter11-数据校验的批量接口)
+- [Chapter12: 使用其它中间件作为注册中心](#chapter12-使用其它中间件作为注册中心)
 
 ---
 
@@ -892,3 +893,53 @@ type Validator[T migrator.Entity] struct {
 具体代码实现链接如下:
 
 - [validator](https://github.com/ycvk/tinybook/blob/b904388bc18712a0b08ebb18a42602d81dd9ab5e/tinybook/pkg/migrator/validator/validator.go#L38-L88)
+
+---
+
+<h2 id="Chapter12">Chapter12: 使用其它中间件作为注册中心</h2>
+
+[GitHub Link](https://github.com/ycvk/tinybook/tree/dev10)
+
+### 背景要求
+
+在目前的代码中，我直接使用了 etcd 作为注册中心。现在要求测试换用其它中间件作为注册中心，用单元测试写一个简单的 demo
+
+### 技术选型
+
+
+| 特性/注册中心  | Consul                              | Etcd                                        | Zookeeper                                   | Nacos                                     | Eureka                                    | Kubernetes服务发现                |
+|----------------|-------------------------------------|---------------------------------------------|---------------------------------------------|-------------------------------------------|-------------------------------------------|-----------------------------------|
+| **开发者**         | HashiCorp                           | CoreOS                                      | Apache                                      | 阿里巴巴                                   | Netflix                                   | Kubernetes社区                    |
+| **语言支持**       | 多语言，与Golang兼容                | 主要是Go                                    | Java（但支持多语言客户端）                   | Java                                      | Java                                      | 多语言，与Kubernetes集成         |
+| **服务发现**       | 是                                  | 是                                          | 是                                          | 是                                        | 是                                        | 是                               |
+| **健康检查**       | 是                                  | 有限（通常需要外部工具）                     | 否                                          | 是                                        | 否                                        | 是（通过Kubernetes探针）         |
+| **配置管理**       | 是                                  | 是                                          | 否                                          | 是                                        | 否                                        | 是（通过ConfigMap等）            |
+| **界面**           | Web UI, CLI, API                    | CLI, API                                    | CLI, API                                    | Web UI, API                               | Web UI, API                               | CLI, API                         |
+| **数据一致性**     | Raft协议                            | Raft协议                                    | ZAB协议                                     | 自有协议                                  | 自有协议                                  | 依赖Kubernetes机制               |
+| **扩展性和稳定性** | 高                                  | 高                                          | 高                                          | 中到高                                    | 中                                        | 高（依赖于Kubernetes的扩展性）   |
+| **使用场景**       | 广泛，适用于多种环境                | 分布式系统，尤其是Kubernetes                | 大规模分布式系统                            | 云原生应用，尤其是在中国区域的用户         | 微服务，特别是Spring Cloud环境下的应用     | Kubernetes环境下的微服务         |
+
+#### 选用Consul的理由：
+
+1. **多功能性**：Consul不仅提供服务发现，还包括健康检查、键值存储和配置管理等功能，这使其能够满足多种需求。
+
+2. **易用性和界面友好**：Consul提供了直观的Web界面，使得服务管理和监控更加容易。同时，它也支持CLI和API，为自动化提供便利。
+
+3. **与Golang的兼容性**：由于Consul由HashiCorp使用Golang开发，它们之间的兼容性非常好，这对于使用Golang编写的微服务项目来说是一个重要优势。
+
+4. **数据一致性和可靠性**：Consul使用Raft协议来保证数据的一致性，这对于分布式系统中的服务注册和发现至关重要。
+
+5. **跨环境适应性**：Consul适用于从传统的物理环境到云和容器化环境的各种部署模式，这种灵活性对于适应不断变化的技术环境非常重要。
+
+6. **社区和生态**：Consul拥有一个活跃的社区和丰富的生态系统，这意味着良好的文档支持、丰富的插件和广泛的实践案例。
+
+基于以上理由，Consul是一个全面且灵活的选择，特别适合于需要一个综合性、可靠且与Golang兼容的注册中心的Golang微服务项目
+
+### 代码实现
+
+- [测试案例代码](https://github.com/ycvk/tinybook/blob/dev10/grpc/consul_test.go) :
+  在`consul_test.go`中，我使用了`consul`作为注册中心，用单元测试写了一个简单的 demo。
+- `TestConsulServer()`方法为启动grpc服务并向consul注册服务。
+- `TestConsulClient()`方法为从consul获取服务地址并调用grpc服务。
+
+---
