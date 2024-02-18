@@ -15,15 +15,15 @@ const (
 
 // Item 代表优先级队列中的一个元素
 type Item[T any, P int64 | float64] struct {
-	Value    T
-	Priority P
+	Value    T // 元素值
+	Priority P // 元素优先级
 }
 
 // PriorityQueue 基于容器/堆的优先级队列实现
 type PriorityQueue[T comparable, P int64 | float64] struct {
 	lock   sync.RWMutex
 	items  []*Item[T, P]
-	lookup map[T]int
+	lookup map[T]int // 元素值到索引的映射
 	kind   HeapKind
 }
 

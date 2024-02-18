@@ -40,6 +40,7 @@ func (s *ConsulTestSuite) SetupSuite() {
 }
 
 func (s *ConsulTestSuite) TestConsulServer() {
+	// 创建grpc服务监听对象
 	listen, err2 := net.Listen("tcp", ":"+fmt.Sprintf("%d", ServerPort))
 	s.Require().NoError(err2)
 	// 注册grpc服务和grpc健康检查服务
