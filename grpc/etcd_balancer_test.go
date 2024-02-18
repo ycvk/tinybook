@@ -144,12 +144,13 @@ func (s *EtcdBalancerTestSuite) TestClient() {
 	defer cancelFunc()
 
 	m := make(map[string]int)
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 10000; i++ {
 		user, err := client.GetUser(timeout, &GetUserRequest{
 			Id: 1,
 		})
 		if err != nil {
-			t.Logf("err:%v", err)
+			//t.Logf("err:%v", err)
+			m[err.Error()]++
 		} else {
 			//t.Log(user)
 		}

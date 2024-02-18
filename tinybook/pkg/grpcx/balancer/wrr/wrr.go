@@ -105,9 +105,12 @@ func (p *Picker) adjustWeight(conn *weightConn, err error) {
 		conn.successCount = 0
 	} else {
 		// 如果成功，增加权重
-		//increaseFactor := min(1<<conn.successCount, MaxIncrease)
-		//conn.weight += increaseFactor
-		//conn.successCount++
+		if conn.failureCount > 0 {
+			conn.failureCount--
+		}
+		increaseFactor := min(1<<conn.successCount, MaxIncrease)
+		conn.weight += increaseFactor
+		conn.successCount++
 		//conn.failureCount = 0
 	}
 }
