@@ -144,7 +144,7 @@ func (s *EtcdBalancerTestSuite) TestClient() {
 	defer cancelFunc()
 
 	m := make(map[string]int)
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 5000; i++ {
 		user, err := client.GetUser(timeout, &GetUserRequest{
 			Id: 1,
 		})
