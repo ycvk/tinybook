@@ -3,7 +3,10 @@ package wrr
 import (
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"sync"
+	"time"
 )
 
 const Name = "custom_weighted_round_robin"
@@ -63,6 +66,27 @@ func (conn *weightConn) OnInvokeFault() {
 	conn.effectiveWeight = max(1, conn.effectiveWeight-1)
 }
 
+// OnInvokeUnavailable 处理熔断逻辑
+func (conn *weightConn) OnInvokeUnavailable() {
+	conn.isAvailable = false
+	// 可以在这里启动一个 goroutine 进行健康检查
+	go conn.healthCheck()
+}
+
+// healthCheck 定期进行健康检查
+func (conn *weightConn) healthCheck() {
+	// 定义健康检查逻辑
+	for {
+		time.Sleep(3 * time.Second) //健康检查间隔
+		// 发送健康检查请求...
+		// 如果节点恢复，更新状态并跳出循环
+		//if 节点已恢复 {
+		//	conn.isAvailable = true
+		//	break
+		//}
+	}
+}
+
 func (p *Picker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
@@ -90,6 +114,10 @@ func (p *Picker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 	// 选中节点后，减去总有效权重
 	if maxWeightConn != nil {
 		maxWeightConn.currentWeight -= totalEffectiveWeight
+		// 检查节点是否被熔断
+		if !maxWeightConn.isAvailable {
+			return balancer.PickResult{}, balancer.ErrNoSubConnAvailable
+		}
 	}
 
 	return balancer.PickResult{
@@ -98,8 +126,18 @@ func (p *Picker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 			// 可以在这里对连接的权重进行调整, 例如根据连接的成功率进行调整
 			p.lock.Lock()
 			defer p.lock.Unlock()
-			if doneInfo.Err != nil {
-				maxWeightConn.OnInvokeFault()
+
+			if err := doneInfo.Err; err != nil {
+				if errStatus, ok := status.FromError(err); ok {
+					switch errStatus.Code() {
+					case codes.Unavailable: // 不可用 熔断
+						maxWeightConn.OnInvokeUnavailable()
+					case codes.ResourceExhausted: // 资源耗尽 降级
+						maxWeightConn.OnInvokeFault()
+					default:
+						return
+					}
+				}
 			} else {
 				maxWeightConn.OnInvokeSuccess()
 			}
