@@ -82,11 +82,21 @@ func (conn *weightConn) healthCheck() {
 		// 如果节点恢复，更新状态并跳出循环
 		//if 节点已恢复 {
 		//	conn.isAvailable = true
+		//conn.effectiveWeight = 1 // 初始为最低权重
+		//go conn.increaseWeightGradually()
 		//	break
 		//}
 	}
 }
 
+// increaseWeightGradually 逐步增加权重
+func (conn *weightConn) increaseWeightGradually() {
+	for conn.effectiveWeight < conn.weight {
+		time.Sleep(10 * time.Second) //权重增加间隔
+		conn.effectiveWeight++
+		// 持续监控节点表现，如果出现问题，可重新熔断
+	}
+}
 func (p *Picker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
