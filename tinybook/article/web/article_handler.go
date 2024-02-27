@@ -383,6 +383,10 @@ func (h *ArticleHandler) Rank(context *gin.Context) {
 	})
 }
 
+func (h *ArticleHandler) Reward(context *gin.Context) {
+
+}
+
 func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 	group := engine.Group("/articles")
 	group.POST("/edit", h.Edit)         // 编辑文章
@@ -394,4 +398,5 @@ func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 	group.POST("/like", h.Like)         // 点赞
 	group.POST("/collect", h.Collect)   // 收藏
 	group.GET("/rank/:id", h.Rank)      // 点赞排行榜
+	group.POST("/reword", h.Reward)     // 打赏
 }
