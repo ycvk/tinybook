@@ -80,7 +80,10 @@ func exit(engine *grpcx.Server) {
 		sig := <-sigs
 		fmt.Println("收到 interactive 退出信号: ", sig)
 		// 退出grpc服务
-		engine.GracefulStop()
+		err := engine.Close()
+		if err != nil {
+			fmt.Println("关闭 interactive 服务发生错误: ", err)
+		}
 		quit <- true
 	}()
 	<-quit
