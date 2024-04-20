@@ -3,6 +3,8 @@ package tinybook
 import (
 	"context"
 	uuid "github.com/lithammer/shortuuid/v4"
+	"log"
+	"time"
 )
 
 var serverName = "UserService"
@@ -14,10 +16,15 @@ type Server struct {
 
 func (s *Server) GetUser(ctx context.Context, request *GetUserRequest) (*User, error) {
 	name := serverName
+	deadline, ok := ctx.Deadline()
 	u := &User{
 		Id:   1,
 		Age:  20,
 		Name: &name,
+	}
+	if ok {
+		since := deadline.Sub(time.Now())
+		log.Printf("deadline:%v, since:%v", deadline.String(), since.String())
 	}
 	return u, nil
 }

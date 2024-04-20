@@ -17,6 +17,7 @@ Golang class homework in Geek Space.
 - [Chapter11: 数据校验的批量接口](#chapter11-数据校验的批量接口)
 - [Chapter12: 使用其它中间件作为注册中心](#chapter12-使用其它中间件作为注册中心)
 - [Chapter13: 动态调整权重的功能](#chapter13-动态调整权重的功能)
+- [Chapter14: 为服务添加熔断功能](#chapter14-为服务添加熔断功能)
 
 ---
 
@@ -976,3 +977,36 @@ type Validator[T migrator.Entity] struct {
 - 在`wrr.go`中，我实现了一个加权平滑轮询算法，并添加了动态调整权重的功能。
 
 ---
+
+
+<h2 id="Chapter14">Chapter14: 为服务添加熔断功能</h2>
+
+[GitHub Link](https://github.com/ycvk/tinybook/tree/dev12)
+
+### 背景要求
+
+- 在负载均衡算法里面处理服务端返回的错误。需要关心两个错误，触发了限流和触发了熔断的错误。
+- 如果是触发了限流，那么调低节点的权重。
+- 如果是触发了熔断，那么将节点暂时挪出可用节点列表。
+- 在挪出可用节点列表之后，另外启动 goroutine，定时发送健康检查请求到服务端。
+- 如果服务端返回了正常响应，那么就挪回去可用节点列表。在挪回去可用节点列表的时候，要注意控制流量。
+
+### 设计实现
+
+[weighted_round_robin](https://github.com/ycvk/tinybook/blob/dev12/tinybook/pkg/grpcx/balancer/wrr/wrr.go)
+- 新增`OnInvokeUnavailable()`方法，用于处理触发了熔断的错误。
+- 把节点的`isAvailable`字段设置为false，表示节点不可用。
+- 启动一个 goroutine 进行定时健康检查。
+
+- 新增`healthCheck()`方法，用于定时发送健康检查请求到服务端。
+- 为了平滑地重新引入恢复的节点，我们需要逐步增加节点权重:
+- ```go
+    if 节点已恢复 {
+    conn.isAvailable = true
+    conn.effectiveWeight = 1 // 初始为最低权重
+    go conn.increaseWeightGradually()
+    break
+    }
+  ```
+- 新增`increaseWeightGradually()`方法，用于逐步增加节点权重。
+- 逐步增加节点权重的目的是为了避免在节点恢复后立即引入大量流量，从而导致服务端再次不可用。
