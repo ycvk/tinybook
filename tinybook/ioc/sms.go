@@ -1,13 +1,13 @@
 package ioc
 
 import (
-	"geek_homework/tinybook/internal/repository"
-	"geek_homework/tinybook/internal/service/sms"
-	"geek_homework/tinybook/internal/service/sms/failover/retry"
-	"geek_homework/tinybook/internal/service/sms/localsms"
-	"geek_homework/tinybook/pkg/limiter"
 	"github.com/redis/go-redis/v9"
 	"time"
+	"tinybook/tinybook/internal/repository"
+	"tinybook/tinybook/internal/service/sms"
+	"tinybook/tinybook/internal/service/sms/failover/retry"
+	"tinybook/tinybook/internal/service/sms/localsms"
+	"tinybook/tinybook/pkg/limiter"
 )
 
 func InitSMSService(cmd redis.Cmdable, repo repository.SMSRepository) sms.Service {

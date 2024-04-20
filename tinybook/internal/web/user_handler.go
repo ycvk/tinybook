@@ -1,14 +1,14 @@
 package web
 
 import (
-	"geek_homework/tinybook/internal/domain"
-	"geek_homework/tinybook/internal/service"
-	jwt2 "geek_homework/tinybook/internal/web/jwt"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"strings"
+	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/internal/service"
+	jwt2 "tinybook/tinybook/internal/web/jwt"
 )
 
 var ErrUserNotFound = service.ErrUserNotFound

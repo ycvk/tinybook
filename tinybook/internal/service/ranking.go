@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/domain"
-	"geek_homework/tinybook/internal/repository"
-	"geek_homework/tinybook/pkg/priorityqueue"
 	"github.com/samber/lo"
 	"math"
 	"time"
+	intrv1 "tinybook/tinybook/api/proto/gen/intr/v1"
+	"tinybook/tinybook/article/domain"
+	"tinybook/tinybook/article/service"
+	"tinybook/tinybook/internal/repository"
+	"tinybook/tinybook/pkg/priorityqueue"
 )
 
 type RankingService interface {
@@ -16,26 +18,24 @@ type RankingService interface {
 }
 
 type BatchRankingService struct {
-	InteractiveSvc InteractiveService
-	ArticleSvc     ArticleService
-	BatchSize      int // 每次获取的文章数量
-	topNum         int // 排行榜数量
-	ScoreFunc      func(likeCount int64, utime time.Time) float64
-	queue          *priorityqueue.PriorityQueue[domain.Article, float64] // 优先队列
-	rankingRepo    repository.RankingRepository
+	ArticleSvc  service.ArticleService
+	BatchSize   int // 每次获取的文章数量
+	topNum      int // 排行榜数量
+	ScoreFunc   func(likeCount int64, utime time.Time) float64
+	queue       *priorityqueue.PriorityQueue[domain.Article, float64] // 优先队列
+	rankingRepo repository.RankingRepository
 }
 
 func (b *BatchRankingService) GetTopN(ctx context.Context) ([]domain.Article, error) {
 	return b.rankingRepo.GetTopN(ctx)
 }
 
-func NewBatchRankingService(interactiveSvc InteractiveService, articleSvc ArticleService, repo repository.RankingRepository) RankingService {
+func NewBatchRankingService(articleSvc service.ArticleService, repo repository.RankingRepository) RankingService {
 	return &BatchRankingService{
-		InteractiveSvc: interactiveSvc,
-		ArticleSvc:     articleSvc,
-		BatchSize:      1000,
-		topNum:         100,
-		rankingRepo:    repo,
+		ArticleSvc:  articleSvc,
+		BatchSize:   1000,
+		topNum:      100,
+		rankingRepo: repo,
 		ScoreFunc: func(likeCount int64, utime time.Time) float64 {
 			return float64(likeCount-1) / math.Pow(time.Now().Sub(utime).Seconds()+2, 1.8)
 		},
@@ -70,12 +70,16 @@ func (b *BatchRankingService) topN(ctx context.Context) ([]domain.Article, error
 			return item.ID
 		})
 		// 根据id获取article的interactive
-		byIds, err := b.InteractiveSvc.GetByIds(ctx, "article", ids)
+		byIds, err := b.ArticleSvc.GetByIds(ctx, &intrv1.GetByIdsRequest{
+			Biz: "article",
+			Ids: ids,
+		})
 		if err != nil {
 			return nil, err
 		}
+		interactives := byIds.GetInteractives()
 		for _, article := range listPub {
-			intr := byIds[article.ID]
+			intr := interactives[article.ID]
 			score := b.ScoreFunc(intr.LikeCount, time.Unix(article.Utime, 0))
 			if b.queue.Len() > b.topNum {
 				// 队列已满
@@ -83,8 +87,7 @@ func (b *BatchRankingService) topN(ctx context.Context) ([]domain.Article, error
 				// 如果当前元素大于最小元素，则替换最小元素
 				// 否则，跳过当前元素
 				queueMin := b.queue.Get()
-				if score < queueMin.Priority { // 当前元素小于最小元素 放回去
-					b.queue.PutItem(queueMin)
+				if score < queueMin.Priority { // 当前元素小于最小元素
 					continue
 				}
 				b.queue.Put(article, score)

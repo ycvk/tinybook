@@ -3,11 +3,11 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"geek_homework/tinybook/internal/domain"
-	"geek_homework/tinybook/internal/repository/cache"
-	"geek_homework/tinybook/internal/repository/dao"
 	"log/slog"
 	"time"
+	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/internal/repository/cache"
+	"tinybook/tinybook/internal/repository/dao"
 )
 
 var (

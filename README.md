@@ -1,4 +1,4 @@
-# Geek_homework
+# TinyBook
 
 Golang class homework in Geek Space.
 
@@ -13,12 +13,14 @@ Golang class homework in Geek Space.
 - [Chapter07: 找出点赞数量前N的数据](#chapter07-找出点赞数量前N的数据)
 - [Chapter08: 为消息队列添加监控](#chapter08-为消息队列添加监控)
 - [Chapter09: 选择最合适的节点](#chapter09-选择最合适的节点)
+- [Chapter10: 在repository层面聚合grpc服务](#chapter10-在repository层面聚合grpc服务)
+- [Chapter11: 数据校验的批量接口](#chapter11-数据校验的批量接口)
 
 ---
 
 <h2 id="Chapter01">Chapter01: 实现切片的删除操作</h2>
 
-[GitHub Link](https://github.com/ycvk/geek_homework/tree/main/)
+[GitHub Link](https://github.com/ycvk/tinybook/tree/main/)
 
 ### 作业要求
 
@@ -31,7 +33,7 @@ Golang class homework in Geek Space.
 
 <h2 id="Chapter02">Chapter02: 实现用户信息编辑功能</h2>
 
-[GitHub Link](https://github.com/ycvk/geek_homework/tree/main/tinybook)
+[GitHub Link](https://github.com/ycvk/tinybook/tree/main/tinybook)
 
 ### 作业要求
 
@@ -80,7 +82,7 @@ Golang class homework in Geek Space.
 
 <h2 id="Chapter03">Chapter03: 部署方案修改</h2>
 
-[GitHub Link](https://github.com/ycvk/geek_homework)
+[GitHub Link](https://github.com/ycvk/tinybook)
 
 ### 作业要求
 
@@ -122,7 +124,7 @@ Golang class homework in Geek Space.
 
 <h2 id="Chapter04">Chapter04: 引入本地缓存</h2>
 
-[GitHub Link](https://github.com/ycvk/geek_homework/)
+[GitHub Link](https://github.com/ycvk/tinybook/)
 
 ### 作业要求
 
@@ -176,11 +178,11 @@ Golang class homework in Geek Space.
 
 #### 代码实现
 
-- [service 层](https://github.com/ycvk/geek_homework/blob/week04/tinybook/internal/service/code.go)
-- [repository 层](https://github.com/ycvk/geek_homework/blob/week04/tinybook/internal/repository/code.go)
-- [cache 层](https://github.com/ycvk/geek_homework/blob/80690ff380c90b9bf1b01f7f7e3e39f176561f32/tinybook/internal/repository/cache/code.go#L31-L102) (
+- [service 层](https://github.com/ycvk/tinybook/blob/week04/tinybook/internal/service/code.go)
+- [repository 层](https://github.com/ycvk/tinybook/blob/week04/tinybook/internal/repository/code.go)
+- [cache 层](https://github.com/ycvk/tinybook/blob/80690ff380c90b9bf1b01f7f7e3e39f176561f32/tinybook/internal/repository/cache/code.go#L31-L102) (
   使用 `theine-go` 作为本地缓存, 逻辑详见代码注释)
-- [wire DI 层](https://github.com/ycvk/geek_homework/blob/80690ff380c90b9bf1b01f7f7e3e39f176561f32/tinybook/wire.go#L25) (
+- [wire DI 层](https://github.com/ycvk/tinybook/blob/80690ff380c90b9bf1b01f7f7e3e39f176561f32/tinybook/wire.go#L25) (
   依赖注入时, 使用 `LocalCodeCache` 替换 `CodeRedisCache`)
 
 #### 测试结果
@@ -207,7 +209,7 @@ Golang class homework in Geek Space.
 
 <h2 id="Chapter05">Chapter05: 同步转异步的容错机制</h2>
 
-[GitHub Link](https://github.com/ycvk/geek_homework/tree/main/week05)
+[GitHub Link](https://github.com/ycvk/tinybook/tree/main/week05)
 
 ### 作业要求
 
@@ -258,7 +260,7 @@ Golang class homework in Geek Space.
 
 ### 重试逻辑
 
-在我的 [重试模块](https://github.com/ycvk/geek_homework/blob/week05/tinybook/internal/service/sms/failover/retry/retry_task.go)
+在我的 [重试模块](https://github.com/ycvk/tinybook/blob/week05/tinybook/internal/service/sms/failover/retry/retry_task.go)
 中，`BaseInterval` 是重试的起始间隔，`Multiplier`
 是每次重试时增加的倍数。由于还加入了一个随机化因素（`RandomizationFactor`），每次重试的实际间隔会在计算出的指数退避间隔基础上有所波动。
 
@@ -327,13 +329,13 @@ retry_intervals
 以下是实现的异步重试容错机制的组件及其逻辑：
 
 - **错误率监控器**:
-  [error_rate_monitor.go](https://github.com/ycvk/geek_homework/blob/week05/tinybook/internal/service/sms/failover/retry/error_rate_monitor.go)
+  [error_rate_monitor.go](https://github.com/ycvk/tinybook/blob/week05/tinybook/internal/service/sms/failover/retry/error_rate_monitor.go)
 - **重试模块**:
-  [retry_task.go](https://github.com/ycvk/geek_homework/blob/week05/tinybook/internal/service/sms/failover/retry/retry_task.go)
+  [retry_task.go](https://github.com/ycvk/tinybook/blob/week05/tinybook/internal/service/sms/failover/retry/retry_task.go)
 - **异步重试逻辑层**:
-  [failover_async.go](https://github.com/ycvk/geek_homework/blob/week05/tinybook/internal/service/sms/failover/retry/failover_async.go)
+  [failover_async.go](https://github.com/ycvk/tinybook/blob/week05/tinybook/internal/service/sms/failover/retry/failover_async.go)
 - **单元测试**:
-  [failover_async_test.go](https://github.com/ycvk/geek_homework/blob/week05/tinybook/internal/service/sms/failover/retry/failover_async_test.go)
+  [failover_async_test.go](https://github.com/ycvk/tinybook/blob/week05/tinybook/internal/service/sms/failover/retry/failover_async_test.go)
 
 这些组件协同工作，实现了以下特点：
 
@@ -400,7 +402,7 @@ retry_intervals
 
 #### 1. 测试限流下的异步重试机制
 
-k8s 项目启动初始化时，在 [InitSMSService](https://github.com/ycvk/geek_homework/blob/week05/tinybook/ioc/sms.go)
+k8s 项目启动初始化时，在 [InitSMSService](https://github.com/ycvk/tinybook/blob/week05/tinybook/ioc/sms.go)
 中将限流器设置为 1 分钟只能发送 1 条短信，并选用本地测试的短信服务`localsms.NewService()`，来测试限流后，异步重试机制的效果。
 
 结果如下：
@@ -423,11 +425,11 @@ k8s 项目启动初始化时，在 [InitSMSService](https://github.com/ycvk/geek
 
 #### 3. 测试错误率超过阈值下的连续失败异步重试机制
 
-首先在 [InitSMSService](https://github.com/ycvk/geek_homework/blob/week05/tinybook/ioc/sms.go)
+首先在 [InitSMSService](https://github.com/ycvk/tinybook/blob/week05/tinybook/ioc/sms.go)
 中将错误率监控器改为 `monitor := retry.NewErrorRateMonitor(0.01, 0.5, 10*time.Second)`
 表示错误率阈值为 1%，窗口大小为 10 秒，来测试错误率超过阈值后，异步重试机制的效果。
 
-随后在localSMSservice的本地测试的 [send](https://github.com/ycvk/geek_homework/blob/week05/tinybook/internal/service/sms/localsms/service.go)
+随后在localSMSservice的本地测试的 [send](https://github.com/ycvk/tinybook/blob/week05/tinybook/internal/service/sms/localsms/service.go)
 方法中，让其返回错误，来模拟错误率超过阈值的情况。
 
 结果如下：
@@ -444,7 +446,7 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 
 <h2 id="Chapter06">Chapter06: 优化打印日志的部分</h2>
 
-[GitHub Link](https://github.com/ycvk/geek_homework/blob/week06/tinybook/internal/web/middleware/error.go)
+[GitHub Link](https://github.com/ycvk/tinybook/blob/week06/tinybook/internal/web/middleware/error.go)
 
 ### 作业要求
 
@@ -508,7 +510,7 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 
 <h2 id="Chapter07">Chapter07: 找出点赞数量前N的数据</h2>
 
-[GitHub Link](https://github.com/ycvk/geek_homework/tree/week07)
+[GitHub Link](https://github.com/ycvk/tinybook/tree/week07)
 
 ### 作业要求
 
@@ -585,20 +587,20 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 ### 代码实现
 
 - handler层: 接口调用流程的实现
-    - [article_handler](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/web/article_handler.go#L326-L350)
+    - [article_handler](https://github.com/ycvk/tinybook/blob/week07/tinybook/internal/web/article_handler.go#L326-L350)
 - service层: 业务逻辑的实现
-    - [interactive_service](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/service/interactive.go#L30-L65)
+    - [interactive_service](https://github.com/ycvk/tinybook/blob/week07/tinybook/internal/service/interactive.go#L30-L65)
 - repository层: 数据库与缓存操作的实现
-    - [interactive_repository](https://github.com/ycvk/geek_homework/blob/b89b00f471642aac670c2f8d2082955fead93e4b/tinybook/internal/repository/interactive.go#L35-L60)
+    - [interactive_repository](https://github.com/ycvk/tinybook/blob/b89b00f471642aac670c2f8d2082955fead93e4b/tinybook/internal/repository/interactive.go#L35-L60)
 - dao层: 数据库操作的实现
-    - [interactive_dao](https://github.com/ycvk/geek_homework/blob/b89b00f471642aac670c2f8d2082955fead93e4b/tinybook/internal/repository/dao/interactive.go#L63-L71)
+    - [interactive_dao](https://github.com/ycvk/tinybook/blob/b89b00f471642aac670c2f8d2082955fead93e4b/tinybook/internal/repository/dao/interactive.go#L63-L71)
 - cache层: 缓存操作的实现
-    - [interactive_cache](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/repository/cache/interactive.go#L42-L108)
+    - [interactive_cache](https://github.com/ycvk/tinybook/blob/week07/tinybook/internal/repository/cache/interactive.go#L42-L108)
 - kafka层: kafka消息队列的实现
-    - [producer](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/events/interactive/producer.go)
-    - [consumer](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/events/interactive/consumer.go)
+    - [producer](https://github.com/ycvk/tinybook/blob/week07/tinybook/internal/events/interactive/producer.go)
+    - [consumer](https://github.com/ycvk/tinybook/blob/week07/tinybook/internal/events/interactive/consumer.go)
     - 定时器 ticker
-      的实现也在其中 [ticker](https://github.com/ycvk/geek_homework/blob/week07/tinybook/internal/events/interactive/consumer.go#L118-L159)
+      的实现也在其中 [ticker](https://github.com/ycvk/tinybook/blob/week07/tinybook/internal/events/interactive/consumer.go#L118-L159)
     - 配合定时器的固定时间尺度，比如 **(1分钟/8小时/1天)** ，可以做到 **每固定时间** 去检查一次redis缓存中的布尔键。
 
     - 如果键存在，则表明排行榜数据有变化，触发本地缓存从 Redis 拉取最新数据，拉取后重置该键。如果键不存在，则表明排行榜数据没有变化，不更新本地缓存。
@@ -643,7 +645,7 @@ QPS为8151.66，比没有缓存时提高了5倍多。且没有任何错误。
 
 <h2 id="Chapter08">Chapter08: 为消息队列添加监控</h2>
 
-[GitHub Link](https://github.com/ycvk/geek_homework/tree/dev8)
+[GitHub Link](https://github.com/ycvk/tinybook/tree/dev8)
 
 ### 背景要求
 
@@ -700,9 +702,9 @@ QPS为8151.66，比没有缓存时提高了5倍多。且没有任何错误。
 
 
 - 以下是代码实现：
-    - [writer_collector](https://github.com/ycvk/geek_homework/blob/dev8/tinybook/pkg/kafkax/prometheus_writer.go) :
+    - [writer_collector](https://github.com/ycvk/tinybook/blob/dev8/tinybook/pkg/kafkax/prometheus_writer.go) :
       实现了`prometheus.Collector`接口，用于将生产者的指标注册到 Prometheus 中。
-    - [producer](https://github.com/ycvk/geek_homework/blame/dev8/tinybook/internal/events/interactive/producer.go#L28-L29) :
+    - [producer](https://github.com/ycvk/tinybook/blame/dev8/tinybook/internal/events/interactive/producer.go#L28-L29) :
       在 new 生产者的所有代码中都添加共两行代码，对生产者`writer`进行监控封装，并注册到Prometheus中。
 
 #### 2. 消费者的Prometheus监控
@@ -714,9 +716,9 @@ QPS为8151.66，比没有缓存时提高了5倍多。且没有任何错误。
 
 
 - 以下是代码实现：
-    - [reader_collector](https://github.com/ycvk/geek_homework/blob/dev8/tinybook/pkg/kafkax/prometheus_reader.go) :
+    - [reader_collector](https://github.com/ycvk/tinybook/blob/dev8/tinybook/pkg/kafkax/prometheus_reader.go) :
       实现了`prometheus.Collector`接口，用于将消费者的指标注册到 Prometheus 中。
-    - [consumer](https://github.com/ycvk/geek_homework/blame/dev8/tinybook/internal/events/interactive/consumer.go#L46-L47) :
+    - [consumer](https://github.com/ycvk/tinybook/blame/dev8/tinybook/internal/events/interactive/consumer.go#L46-L47) :
       在 new 消费者的所有代码中都添加共两行代码，对消费者`reader`进行监控封装，并注册到Prometheus中。
 
 ### 监控
@@ -742,7 +744,7 @@ QPS为8151.66，比没有缓存时提高了5倍多。且没有任何错误。
 
 <h2 id="Chapter09">Chapter09: 选择最合适的节点</h2>
 
-[GitHub Link](https://github.com/ycvk/geek_homework/blob/dev8/)
+[GitHub Link](https://github.com/ycvk/tinybook/blob/dev8/)
 
 ### 背景要求
 
@@ -795,7 +797,6 @@ QPS为8151.66，比没有缓存时提高了5倍多。且没有任何错误。
 
 - 这个方案的优点是，它可以在大部分情况下选择到负载较低的节点，而且它不需要引入额外的中间件。但是，它也有一些缺点，例如，它需要定期更新节点的负载值，这可能会增加系统的复杂性。此外，它也不能保证每次都能选择到最佳的节点，特别是在节点的负载变化非常快的情况下。
 
-
 - 虚拟节点的引入也有多个优点。首先，一旦某个节点不可用，该节点将使得多个虚节点不可用，从而使得多个相邻的真实节点承载失效节点的压力。
 
 
@@ -806,9 +807,10 @@ QPS为8151.66，比没有缓存时提高了5倍多。且没有任何错误。
 #### 1. 一致性哈希算法
 
 - 首先，我们需要实现一个一致性哈希算法，用于选择节点。以下是代码实现：
-    - [consistent_hash](https://github.com/ycvk/geek_homework/blob/dev8/tinybook/pkg/hashring/hashring.go) :
+    - [consistent_hash](https://github.com/ycvk/tinybook/blob/dev8/tinybook/pkg/hashring/hashring.go) :
       实现了一致性哈希环，用于选择节点。
-    - 我在以上代码的`AddNode()`函数中，根据节点的负载动态确定了虚拟节点的数量。**负载越高的节点，虚拟节点越少；负载越低的节点，虚拟节点越多。**
+    - 我在以上代码的`AddNode()`函数中，根据节点的负载动态确定了虚拟节点的数量。**负载越高的节点，虚拟节点越少；负载越低的节点，虚拟节点越多。
+      **
     - 在`RemoveNode()`函数中，移除节点时，我会移除所有可能的虚拟节点。
     - 在`UpdateLoad()`函数中，我先移除了节点的所有虚拟节点，然后根据新的负载值重新添加了虚拟节点。
     - 在`AutoUpdateLoadByFunc()`中，如果一个节点的负载值获取失败，那么会设置为`100`，在节点恢复使用前，将不会被选中。
@@ -816,7 +818,77 @@ QPS为8151.66，比没有缓存时提高了5倍多。且没有任何错误。
 
 #### 2. `ranking_job`中的使用实现
 
-- [ranking_job](https://github.com/ycvk/geek_homework/blob/dev8/tinybook/internal/job/ranking_job.go) :
+- [ranking_job](https://github.com/ycvk/tinybook/blob/dev8/tinybook/internal/job/ranking_job.go) :
   在`ranking_job`中，我使用了一致性哈希算法来选择节点。
 - 在`Run()`执行时，随机生成一个整数，然后使用一致性哈希算法，选择节点。
 - 因为我在`AddNode()`函数中，根据节点的负载动态确定了虚拟节点的数量，所以可以保证，负载越高的节点，被选中的几率就越低；负载越低的节点，被选中的几率就越高。
+
+---
+
+<h2 id="Chapter10">Chapter10: 在repository层面聚合grpc服务</h2>
+
+[GitHub Link](https://github.com/ycvk/tinybook/tree/dev9)
+
+### 背景要求
+
+在目前的代码中，我直接在 Handler 层面上聚合了 gRPC 服务。
+
+理论上来说，这不符合 DDD 的设计，但是好用。
+
+按照 DDD 的设计来说的话，这边应该是要把 Interactive 的 gRPC 做成一个 Repository，而后在 ArticleRepository 里面完成
+Interactive 相关的组装。
+
+换言之，将 Interactive 看做是 Article 的一个部分。
+
+因此本次需求是，用这种形态来集成 gRPC 的 Interactive。
+
+### 代码实现
+
+- [article_repository](https://github.com/ycvk/tinybook/blob/0224181e4d2edb552797af7c1468f434c66b93f1/tinybook/internal/repository/article.go#L47)
+  在repository中组合了grpc服务的client接口，并在构造函数中初始化此client。然后[实现了此client接口的所有方法](https://github.com/ycvk/tinybook/blob/0224181e4d2edb552797af7c1468f434c66b93f1/tinybook/internal/repository/article.go#L58-L84)
+- [article_handler](https://github.com/ycvk/tinybook/blob/dev9/tinybook/internal/web/article_handler.go)
+  在handler中，去掉了所有对grpc服务的依赖，只保留了对`article_service`的依赖，`article_service`中依赖了`article_repository`
+  ，而`article_repository`中依赖了grpc服务的client接口。
+  以此来实现了在repository层面聚合grpc服务的目的。
+
+
+<h2 id="Chapter11">Chapter11: 数据校验的批量接口</h2>
+
+[GitHub Link](https://github.com/ycvk/tinybook/tree/dev9)
+
+### 背景要求
+
+在 Validator 里面，base -> target 的这个过程，都是一条条取出来比较的。
+
+现在需要修改为批量接口。
+
+也就是，从 base 中取一批，而后从 target 里面找出对应的数据，比较是否相等。
+
+### 设计实现
+
+#### 1. 引入 `batchSize` 参数到 `Validator` 结构体
+
+当前代码是逐条比较 base 和 target 中的记录。为实现批量处理，我们需要更改 validateBaseToTarget 函数，使其能够一次处理多条记录。
+
+首先，引入 batchSize 参数到 Validator 结构体。这个参数将决定每次从数据库中检索的记录数量。
+
+```go
+type Validator[T migrator.Entity] struct {
+    // ... 其他字段 ...
+    batchSize int
+}
+```
+
+#### 2. 修改 `validateBaseToTarget` 逻辑
+
+重写 `validateBaseToTarget` 函数以支持批量处理。
+
+- 用 `batchSize` 替换原来的单条记录处理逻辑。
+- 从 `base` 数据库中获取一批记录。
+- 对于每批获取的记录，使用它们的 `ID` 从 `target` 数据库中找到对应的记录。
+- 比较这两批记录是否存在或相等。
+- 根据比较结果，发送相应的`notify()`消息队列事件。
+
+具体代码实现链接如下:
+
+- [validator](https://github.com/ycvk/tinybook/blob/b904388bc18712a0b08ebb18a42602d81dd9ab5e/tinybook/pkg/migrator/validator/validator.go#L38-L88)

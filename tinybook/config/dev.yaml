@@ -10,4 +10,11 @@ mongodb:
   dbname: "tinybook"
   authSource: "admin"
 kafka:
-  brokers: "localhost:9092"
+  brokers: "bj.ycvk.app:9192,bj.ycvk.app:9292,bj.ycvk.app:9392"
+grpc:
+  server:
+    addr: "localhost:8090"
+  client:
+    intr:
+      addr: "localhost:8090"
+      threshold: "10"

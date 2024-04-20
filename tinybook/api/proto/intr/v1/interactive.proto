@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package intr.v1;
+
+option go_package = "github.com/ycvk/tinybook/intr/v1;intrv1";
+
+
+service InteractiveService {
+    rpc IncreaseReadCount (IncreaseReadCountRequest) returns (IncreaseReadCountResponse);
+    rpc Like (LikeRequest) returns (LikeResponse);
+    rpc Unlike (UnlikeRequest) returns (UnlikeResponse);
+    rpc Collect (CollectRequest) returns (CollectResponse);
+    rpc GetInteractive (GetInteractiveRequest) returns (GetInteractiveResponse);
+    rpc GetLikeRanks (GetLikeRanksRequest) returns (GetLikeRanksResponse);
+    rpc GetByIds (GetByIdsRequest) returns (GetByIdsResponse);
+}
+
+message GetByIdsResponse {
+    map<int64, Interactive> interactives = 1;
+}
+
+message GetLikeRanksResponse {
+    repeated ArticleVo articles = 1;
+}
+
+message ArticleVo {
+    int64 id = 1;
+    string title = 2;
+    string content = 3;
+    string abstract = 4;
+    string author = 5;
+    string author_name = 6;
+    string status = 7;
+    string ctime = 8;
+    string utime = 9;
+    //    Interactive interactive = 10; 因为不能组合Interactive，所以只能拆开一个个字段
+    int64 biz_id = 11;
+    string biz = 12;
+    int64 read_count = 13;
+    int64 like_count = 14;
+    int64 collect_count = 15;
+    bool liked = 16;
+    bool collected = 17;
+}
+
+message GetLikeRanksRequest {
+    string biz = 1;
+    int64 num = 2;
+}
+
+message GetInteractiveResponse {
+    Interactive interactive = 1;
+}
+
+message Interactive {
+    int64 biz_id = 1;
+    string biz = 2;
+    int64 read_count = 3;
+    int64 like_count = 4;
+    int64 collect_count = 5;
+    bool liked = 6;
+    bool collected = 7;
+}
+
+message GetInteractiveRequest {
+    string biz = 1;
+    int64 biz_id = 2;
+    int64 uid = 3;
+}
+
+message CollectRequest {
+    string biz = 1;
+    int64 biz_id = 2;
+    int64 uid = 3;
+    int64 cid = 4;
+}
+
+message CollectResponse {
+}
+
+message UnlikeRequest {
+    string biz = 1;
+    int64 biz_id = 2;
+    int64 uid = 3;
+}
+
+message UnlikeResponse {
+}
+
+message GetByIdsRequest {
+    string biz = 1;
+    repeated int64 ids = 2;
+}
+
+message LikeRequest {
+    string biz = 1;
+    int64 biz_id = 2;
+    int64 uid = 3;
+}
+
+message LikeResponse {
+}
+
+message IncreaseReadCountRequest {
+    string biz = 1;
+    int64 biz_id = 2;
+}
+
+message IncreaseReadCountResponse {
+}

@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/domain"
-	"geek_homework/tinybook/internal/repository/cache"
+	"tinybook/tinybook/article/domain"
+	"tinybook/tinybook/internal/repository/cache"
 )
 
 type RankingRepository interface {

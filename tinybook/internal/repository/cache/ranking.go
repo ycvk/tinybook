@@ -2,12 +2,12 @@ package cache
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/domain"
 	"github.com/Yiling-J/theine-go"
 	"github.com/bytedance/sonic"
 	"github.com/cockroachdb/errors"
 	"github.com/redis/go-redis/v9"
 	"time"
+	"tinybook/tinybook/article/domain"
 )
 
 type RankingCache interface {

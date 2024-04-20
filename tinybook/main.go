@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"geek_homework/tinybook/ioc"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 	_ "github.com/spf13/viper/remote"
@@ -15,6 +14,7 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+	"tinybook/tinybook/ioc"
 )
 
 func init() {
@@ -85,6 +85,8 @@ func initViper() {
 	if err != nil {
 		panic(err)
 	}
+	viper.WatchConfig()
+
 }
 
 // 监听退出

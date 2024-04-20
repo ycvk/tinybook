@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/domain"
-	"geek_homework/tinybook/internal/repository"
 	"github.com/cockroachdb/errors"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"log/slog"
+	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/internal/repository"
 )
 
 var (

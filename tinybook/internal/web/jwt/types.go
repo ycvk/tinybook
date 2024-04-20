@@ -1,8 +1,8 @@
 package jwt
 
 import (
-	"geek_homework/tinybook/internal/domain"
 	"github.com/gin-gonic/gin"
+	"tinybook/tinybook/internal/domain"
 )
 
 type Handler interface {

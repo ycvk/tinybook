@@ -3,10 +3,10 @@ package wechat
 import (
 	"context"
 	"fmt"
-	"geek_homework/tinybook/internal/domain"
 	"github.com/bytedance/sonic"
 	"net/http"
 	"net/url"
+	"tinybook/tinybook/internal/domain"
 )
 
 var redirectURI = url.PathEscape("https://tinybook.ycvk.app/oauth2/wechat/callback")

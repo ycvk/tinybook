@@ -1,13 +1,13 @@
 package ioc
 
 import (
-	"geek_homework/tinybook/internal/job"
-	"geek_homework/tinybook/internal/service"
 	"github.com/bsm/redislock"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 	"time"
+	"tinybook/tinybook/internal/job"
+	"tinybook/tinybook/internal/service"
 )
 
 func InitRankingJob(svc service.RankingService, client *redislock.Client, logger *zap.Logger) *job.RankingJob {

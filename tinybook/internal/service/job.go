@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/domain"
-	"geek_homework/tinybook/internal/repository"
 	"go.uber.org/zap"
 	"time"
+	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/internal/repository"
 )
 
 type CronJobService interface {

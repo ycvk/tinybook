@@ -1,14 +1,14 @@
 package web
 
 import (
-	"geek_homework/tinybook/internal/service"
-	"geek_homework/tinybook/internal/service/oauth2/wechat"
-	jwt2 "geek_homework/tinybook/internal/web/jwt"
 	"github.com/cockroachdb/errors"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	uuid "github.com/lithammer/shortuuid/v4"
 	"net/http"
+	"tinybook/tinybook/internal/service"
+	"tinybook/tinybook/internal/service/oauth2/wechat"
+	jwt2 "tinybook/tinybook/internal/web/jwt"
 )
 
 const JWTKey = "MK7z43qKmUkY5sy9w3rQ8CygFpOSN90W"

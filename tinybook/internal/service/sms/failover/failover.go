@@ -2,9 +2,9 @@ package failover
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/service/sms"
 	"github.com/cockroachdb/errors"
 	"log/slog"
+	"tinybook/tinybook/internal/service/sms"
 )
 
 var ErrAllServicesFailed = errors.New("all send sms services failed")

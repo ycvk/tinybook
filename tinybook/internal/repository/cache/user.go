@@ -3,10 +3,10 @@ package cache
 import (
 	"context"
 	"fmt"
-	"geek_homework/tinybook/internal/domain"
 	"github.com/bytedance/sonic"
 	"github.com/redis/go-redis/v9"
 	"time"
+	"tinybook/tinybook/internal/domain"
 )
 
 var ErrUserNotFound = redis.Nil

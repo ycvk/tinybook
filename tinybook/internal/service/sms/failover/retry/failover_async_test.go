@@ -2,7 +2,6 @@ package retry
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/repository"
 	repomocks "geek_homework/tinybook/internal/repository/mocks"
 	"geek_homework/tinybook/internal/service/sms"
 	smsmocks "geek_homework/tinybook/internal/service/sms/mocks"
@@ -12,6 +11,7 @@ import (
 	"github.com/zeebo/assert"
 	"go.uber.org/mock/gomock"
 	"testing"
+	"tinybook/tinybook/internal/repository"
 )
 
 func TestAsyncFailoverSMSService_Send(t *testing.T) {

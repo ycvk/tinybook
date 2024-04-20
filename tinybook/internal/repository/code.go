@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/repository/cache"
-	"geek_homework/tinybook/internal/repository/dao"
+	"tinybook/tinybook/internal/repository/cache"
+	"tinybook/tinybook/internal/repository/dao"
 )
 
 var DuplicatePhoneError = dao.DuplicatePhoneError

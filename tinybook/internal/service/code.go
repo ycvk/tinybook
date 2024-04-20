@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"geek_homework/tinybook/internal/repository"
-	"geek_homework/tinybook/internal/service/sms"
 	regexp "github.com/wasilibs/go-re2"
 	"math/rand"
+	"tinybook/tinybook/internal/repository"
+	"tinybook/tinybook/internal/service/sms"
 )
 
 var DuplicatePhoneError = repository.DuplicatePhoneError

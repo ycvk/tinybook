@@ -3,17 +3,27 @@
 package main
 
 import (
-	"geek_homework/tinybook/internal/events/article"
-	"geek_homework/tinybook/internal/events/interactive"
-	"geek_homework/tinybook/internal/job"
-	"geek_homework/tinybook/internal/repository"
-	"geek_homework/tinybook/internal/repository/cache"
-	"geek_homework/tinybook/internal/repository/dao"
-	"geek_homework/tinybook/internal/service"
-	"geek_homework/tinybook/internal/web"
-	"geek_homework/tinybook/internal/web/jwt"
-	"geek_homework/tinybook/ioc"
 	"github.com/google/wire"
+	readcount2 "tinybook/tinybook/article/events/readcount"
+	repository3 "tinybook/tinybook/article/repository"
+	cache3 "tinybook/tinybook/article/repository/cache"
+	dao3 "tinybook/tinybook/article/repository/dao"
+	service3 "tinybook/tinybook/article/service"
+	web2 "tinybook/tinybook/article/web"
+	"tinybook/tinybook/interactive/events/rank"
+	"tinybook/tinybook/interactive/events/readcount"
+	repository2 "tinybook/tinybook/interactive/repository"
+	cache2 "tinybook/tinybook/interactive/repository/cache"
+	dao2 "tinybook/tinybook/interactive/repository/dao"
+	service2 "tinybook/tinybook/interactive/service"
+	"tinybook/tinybook/internal/job"
+	"tinybook/tinybook/internal/repository"
+	"tinybook/tinybook/internal/repository/cache"
+	"tinybook/tinybook/internal/repository/dao"
+	"tinybook/tinybook/internal/service"
+	"tinybook/tinybook/internal/web"
+	"tinybook/tinybook/internal/web/jwt"
+	"tinybook/tinybook/ioc"
 )
 
 // 热榜服务
@@ -25,10 +35,13 @@ var rankingServiceProvider = wire.NewSet(
 
 // interactive 互动服务
 var interactiveServiceProvider = wire.NewSet(
-	cache.NewRedisInteractiveCache,
-	dao.NewGormInteractiveDAO,
-	repository.NewCachedInteractiveRepository,
-	service.NewInteractiveService,
+	cache2.NewRedisInteractiveCache,
+	dao2.NewGormInteractiveDAO,
+	repository2.NewCachedInteractiveRepository,
+	service2.NewInteractiveService,
+
+	// 远程grpc interactive
+	ioc.InitIntrClient,
 )
 
 // job 服务
@@ -55,7 +68,7 @@ func InitWebServer() *App {
 		// 初始化sms模块
 		ioc.InitSMSService, repository.NewGormSMSRepository, dao.NewGormSMSDAO,
 		// 初始化article模块
-		repository.NewCachedArticleRepository, dao.NewMongoDBArticleDAO, service.NewArticleService, cache.NewRedisArticleCache,
+		repository3.NewCachedArticleRepository, dao3.NewMongoDBArticleDAO, service3.NewArticleService, cache3.NewRedisArticleCache,
 		// 初始化interactive模块
 		interactiveServiceProvider,
 		// 初始化oauth2模块
@@ -64,14 +77,17 @@ func InitWebServer() *App {
 		rankingServiceProvider, ioc.InitJobs, ioc.InitRankingJob,
 		// 初始化handler
 		web.NewUserHandler, web.NewOAuth2WechatHandler, jwt.NewRedisJWTHandler,
-		web.NewArticleHandler,
+		web2.NewArticleHandler,
 		// 初始化web 和 中间件
 		ioc.InitWebServer, ioc.InitHandlerFunc, ioc.InitLogger,
+		// 初始化kafka writer
+		ioc.InitWriter,
 		// 初始化阅读数 read num kafka
-		ioc.InitWriter, article.NewKafkaArticleProducer,
-		article.NewKafkaConsumer, article.CollectConsumer,
+		readcount2.NewKafkaReadCountProducer, readcount.NewKafkaReadCountConsumer,
 		// 初始化点赞榜 like rank kafka
-		interactive.NewKafkaLikeRankProducer, interactive.NewKafkaLikeRankConsumer,
+		rank.NewKafkaLikeRankProducer, rank.NewKafkaLikeRankConsumer,
+		// 收集所有的consumer
+		readcount.CollectConsumer,
 
 		// 初始化job
 		jobServiceProvider,

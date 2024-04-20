@@ -1,11 +1,11 @@
 package middleware
 
 import (
-	jwt2 "geek_homework/tinybook/internal/web/jwt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/samber/lo"
 	"net/http"
+	jwt2 "tinybook/tinybook/internal/web/jwt"
 )
 
 type LoginJWTMiddlewareBuilder struct {

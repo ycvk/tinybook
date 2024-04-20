@@ -2,10 +2,10 @@ package prometheus
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/domain"
-	"geek_homework/tinybook/internal/service/oauth2/wechat"
 	"github.com/prometheus/client_golang/prometheus"
 	"time"
+	"tinybook/tinybook/internal/domain"
+	"tinybook/tinybook/internal/service/oauth2/wechat"
 )
 
 type Decorator struct {

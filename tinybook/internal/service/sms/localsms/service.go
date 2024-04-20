@@ -2,8 +2,8 @@ package localsms
 
 import (
 	"context"
-	"geek_homework/tinybook/internal/service/sms"
 	"log"
+	"tinybook/tinybook/internal/service/sms"
 )
 
 type Service struct {
