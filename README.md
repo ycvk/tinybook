@@ -1,6 +1,6 @@
 # TinyBook
 
-Golang class homework in Geek Space.
+一个golang实现的微服务。
 
 ## Table of Contents
 
