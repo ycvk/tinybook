@@ -114,6 +114,7 @@ func (s *EtcdTestSuite) TestClient() {
 
 	conn, err := grpc.Dial("etcd:///service/user",
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy": "custom_weighted_round_robin"}`),
 		grpc.WithResolvers(builder), // 注册etcd的resolver
 	)
 	if err != nil {
