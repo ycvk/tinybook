@@ -20,6 +20,7 @@ type ArticleDAO interface {
 	GetArticlesByAuthor(ctx context.Context, uid int64, limit int, offset int) ([]Article, error)
 	GetArticleById(ctx context.Context, id int64) (Article, error)
 	GetPubArticleById(ctx context.Context, id int64) (PublishedArticle, error)
+	GetPubList(ctx context.Context, t time.Time, limit int, offset int) ([]PublishedArticle, error)
 }
 
 type Article struct {
@@ -40,6 +41,18 @@ func (p *PublishedArticle) Collection() string {
 
 type GormArticleDAO struct {
 	db *gorm.DB
+}
+
+func (g *GormArticleDAO) GetPubList(ctx context.Context, t time.Time, limit int, offset int) ([]PublishedArticle, error) {
+	var articles []PublishedArticle
+	err := g.db.WithContext(ctx).
+		Where("utime < ? and status = ?", t.Unix(), 2).
+		Order("utime desc").
+		Limit(limit).
+		Offset(offset).
+		Find(&articles).
+		Error
+	return articles, err
 }
 
 func (g *GormArticleDAO) GetPubArticleById(ctx context.Context, id int64) (PublishedArticle, error) {
@@ -160,6 +173,16 @@ type MongoDBArticleDAO struct {
 	coll          *qmgo.Collection
 	publishedColl *qmgo.Collection
 	dbV2          *mongo.Conn
+}
+
+func (m *MongoDBArticleDAO) GetPubList(ctx context.Context, t time.Time, limit int, offset int) ([]PublishedArticle, error) {
+	var articles []PublishedArticle
+	err := m.publishedColl.
+		Find(ctx, bson.M{"utime": bson.M{"$lt": t.Unix()}, "status": 2}).
+		Skip(int64(offset)).
+		Limit(int64(limit)).
+		All(&articles)
+	return articles, err
 }
 
 func (m *MongoDBArticleDAO) GetPubArticleById(ctx context.Context, id int64) (PublishedArticle, error) {

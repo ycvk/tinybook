@@ -3,9 +3,10 @@ package middleware
 import (
 	"bytes"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	"io"
+	"net/url"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -23,6 +24,13 @@ type AccessLog struct {
 	RespBody string `json:"resp_body"`
 	Duration string `json:"duration"`
 	Status   int    `json:"status"`
+}
+
+var vector *prometheus.CounterVec
+
+func InitCounter(opts prometheus.CounterOpts) {
+	vector = prometheus.NewCounterVec(opts, []string{"status"})
+	prometheus.MustRegister(vector)
 }
 
 func NewLogMiddleware(logFn func(ctx *gin.Context, accessLog *AccessLog)) *LogMiddlewareBuilder {
@@ -45,26 +53,26 @@ func (builder *LogMiddlewareBuilder) AllowPrintRespBody() *LogMiddlewareBuilder 
 
 func (builder *LogMiddlewareBuilder) Build() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		url := ctx.Request.URL.Path
-		if len(url) > 1024 {
-			url = url[:1024]
+		urlPath := ctx.Request.URL.Path
+		if len(urlPath) > 1024 {
+			urlPath = urlPath[:1024]
 		}
 		method := ctx.Request.Method
 		ip := ctx.ClientIP()
 		accessLog := &AccessLog{
-			Path:   url,
+			Path:   urlPath,
 			Method: method,
 			Ip:     ip,
 		}
 		if builder.allowPrintReqBody {
 			data, _ := ctx.GetRawData()
+			var unquote []byte
 			if len(data) > 2048 {
-				unquote, _ := unicodeToZH(data[:2048])
-				accessLog.ReqBody = string(unquote)
+				unquote, _ = unicodeToZH(data[:2048])
 			} else {
-				unquote, _ := unicodeToZH(data)
-				accessLog.ReqBody = string(unquote)
+				unquote, _ = unicodeToZH(data)
 			}
+			accessLog.ReqBody = string(unquote)
 			ctx.Request.Body = io.NopCloser(bytes.NewBuffer(data))
 		}
 		now := time.Now()
@@ -77,6 +85,7 @@ func (builder *LogMiddlewareBuilder) Build() gin.HandlerFunc {
 			if builder.logFn != nil {
 				builder.logFn(ctx, accessLog)
 			}
+			vector.WithLabelValues(strconv.Itoa(accessLog.Status)).Inc() //prometheus 记录状态码
 		}()
 		// 执行下一个中间件
 		ctx.Next()
@@ -106,9 +115,15 @@ func (rw *responseWriter) WriteHeader(code int) {
 
 // unicodeToZH unicode转中文
 func unicodeToZH(raw []byte) ([]byte, error) {
-	str, err := strconv.Unquote(strings.Replace(strconv.Quote(string(raw)), `\\u`, `\u`, -1))
+	//str, err := strconv.Unquote(strings.Replace(strconv.Quote(string(raw)), `\\u`, `\u`, -1))
+	//if err != nil {
+	//	return nil, err
+	//}
+	//return []byte(str), nil
+	// 用url.QueryUnescape替换strconv.Unquote 更高效
+	decodedStr, err := url.QueryUnescape(string(raw))
 	if err != nil {
 		return nil, err
 	}
-	return []byte(str), nil
+	return []byte(decodedStr), nil
 }

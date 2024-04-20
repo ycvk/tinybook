@@ -1,6 +1,9 @@
 package ioc
 
 import (
+	"geek_homework/tinybook/pkg/redisx"
+	"github.com/bsm/redislock"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"sync"
@@ -20,10 +23,27 @@ func InitRedis() redis.Cmdable {
 	if err != nil {
 		panic(err)
 	}
+	hook := redisx.NewPrometheusHook(prometheus.SummaryOpts{
+		Namespace: "tinybook",
+		Subsystem: "redis",
+		Name:      "redis",
+		Help:      "统计redis操作耗时",
+	})
 	redisOnce.Do(func() {
-		redisClient = redis.NewClient(&redis.Options{
+		//redisClient = redis.NewClient(&redis.Options{
+		//	Addr: cfg.Addr,
+		//})
+		newClient := redis.NewClient(&redis.Options{
 			Addr: cfg.Addr,
 		})
+		newClient.AddHook(hook)
+
+		redisClient = newClient
 	})
 	return redisClient
+}
+
+func InitRedisLock(cmd redis.Cmdable) *redislock.Client {
+	c := redislock.New(cmd)
+	return c
 }

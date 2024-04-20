@@ -41,6 +41,7 @@ type ArticleRepository interface {
 	GetCache(ctx context.Context, key int64, articleType ArticleType) (domain.Article, error)
 	DelCache(ctx context.Context, key int64, articleType ArticleType) error
 	GetPubArticleById(ctx context.Context, id int64) (domain.Article, error)
+	ListPub(ctx context.Context, t time.Time, limit int, offset int) ([]domain.Article, error)
 }
 
 type CachedArticleRepository struct {
@@ -48,6 +49,17 @@ type CachedArticleRepository struct {
 	cache    cache.ArticleCache
 	userRepo UserRepository
 	log      *zap.Logger
+}
+
+func (c *CachedArticleRepository) ListPub(ctx context.Context, t time.Time, limit int, offset int) ([]domain.Article, error) {
+	list, err := c.dao.GetPubList(ctx, t, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	articles := lo.Map(list, func(item dao.PublishedArticle, index int) domain.Article {
+		return c.pubDaoToDomain(item)
+	})
+	return articles, nil
 }
 
 func (c *CachedArticleRepository) GetPubArticleById(ctx context.Context, id int64) (domain.Article, error) {
@@ -299,6 +311,27 @@ func (c *CachedArticleRepository) domainToDao(article domain.Article) dao.Articl
 }
 
 func (c *CachedArticleRepository) daoToDomain(article dao.Article) domain.Article {
+	var abstract string
+	runeContent := []rune(article.Content)
+	// 取前128个字符作为摘要
+	if len(runeContent) > 128 {
+		abstract = string(runeContent[:128])
+	} else {
+		abstract = string(runeContent)
+	}
+	return domain.Article{
+		ID:       article.ID,
+		Title:    article.Title,
+		Content:  article.Content,
+		Abstract: abstract,
+		Author:   domain.Author{ID: article.AuthorId},
+		Status:   domain.ArticleStatus(article.Status),
+		Ctime:    article.Ctime,
+		Utime:    article.Utime,
+	}
+}
+
+func (c *CachedArticleRepository) pubDaoToDomain(article dao.PublishedArticle) domain.Article {
 	var abstract string
 	runeContent := []rune(article.Content)
 	// 取前128个字符作为摘要

@@ -9,6 +9,7 @@ package main
 import (
 	"geek_homework/tinybook/internal/events/article"
 	"geek_homework/tinybook/internal/events/interactive"
+	"geek_homework/tinybook/internal/job"
 	"geek_homework/tinybook/internal/repository"
 	"geek_homework/tinybook/internal/repository/cache"
 	"geek_homework/tinybook/internal/repository/dao"
@@ -16,6 +17,7 @@ import (
 	"geek_homework/tinybook/internal/web"
 	"geek_homework/tinybook/internal/web/jwt"
 	"geek_homework/tinybook/ioc"
+	"github.com/google/wire"
 )
 
 import (
@@ -60,11 +62,34 @@ func InitWebServer() *App {
 	articleHandler := web.NewArticleHandler(articleService, interactiveService, logger)
 	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler)
 	kafkaConsumer := article.NewKafkaConsumer(interactiveRepository, logger)
-	interactiveKafkaConsumer := interactive.NewKafkaConsumer(logger, theineCache, cmdable)
+	interactiveKafkaConsumer := interactive.NewKafkaLikeRankConsumer(logger, theineCache, cmdable)
 	v2 := article.CollectConsumer(kafkaConsumer, interactiveKafkaConsumer)
+	rankingCache := cache.NewRedisRankingCache(cmdable)
+	rankingRepository := repository.NewCachedRankingRepository(rankingCache)
+	rankingService := service.NewBatchRankingService(interactiveService, articleService, rankingRepository)
+	client := ioc.InitRedisLock(cmdable)
+	rankingJob := ioc.InitRankingJob(rankingService, client, logger)
+	cron := ioc.InitJobs(logger, rankingJob)
+	cronJobDao := dao.NewGormCronJobDao(db)
+	cronJobRepository := repository.NewCronJobRepository(cronJobDao)
+	cronJobService := service.NewCronJobService(logger, cronJobRepository)
+	scheduler := job.NewScheduler(cronJobService, logger)
 	app := &App{
 		server:    engine,
 		consumers: v2,
+		cron:      cron,
+		scheduler: scheduler,
 	}
 	return app
 }
+
+// wire.go:
+
+// 热榜服务
+var rankingServiceProvider = wire.NewSet(cache.NewRedisRankingCache, repository.NewCachedRankingRepository, service.NewBatchRankingService)
+
+// interactive 互动服务
+var interactiveServiceProvider = wire.NewSet(cache.NewRedisInteractiveCache, dao.NewGormInteractiveDAO, repository.NewCachedInteractiveRepository, service.NewInteractiveService)
+
+// job 服务
+var jobServiceProvider = wire.NewSet(service.NewCronJobService, repository.NewCronJobRepository, dao.NewGormCronJobDao, job.NewScheduler, job.NewLocalFuncExecutor)

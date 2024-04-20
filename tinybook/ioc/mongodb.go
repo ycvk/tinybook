@@ -58,8 +58,8 @@ func InitMongoDB(zipLog *zap.Logger) *qmgo.Database {
 
 	// 创建cmdMonitor，用于打印SQL
 	//startedCommands := make(map[int64]bson.Raw)
-	startedCommands := sync.Map{} // map[int64]bson.Raw
-	cmdMonitor := &event.CommandMonitor{
+	startedCommands := sync.Map{}        // map[int64]bson.Raw
+	cmdMonitor := &event.CommandMonitor{ // CommandMonitor 用于监控命令
 		Started: func(_ context.Context, evt *event.CommandStartedEvent) {
 			startedCommands.Store(evt.RequestID, evt.Command)
 			//startedCommands[evt.RequestID] = evt.Command

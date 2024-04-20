@@ -4,14 +4,17 @@ import (
 	"geek_homework/tinybook/internal/web"
 	"geek_homework/tinybook/internal/web/jwt"
 	"geek_homework/tinybook/internal/web/middleware"
+	"geek_homework/tinybook/pkg/ginx/middleware/prometheus"
 	"geek_homework/tinybook/pkg/ginx/middleware/ratelimit"
 	"geek_homework/tinybook/pkg/limiter"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	redisSession "github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
+	prometheus2 "github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.uber.org/zap"
 	"strings"
 	"time"
@@ -22,6 +25,9 @@ func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler,
 	engine := gin.Default()
 	// 注册中间件
 	engine.Use(handlerFunc...)
+	// 接入opentelemetry
+	g := otelgin.Middleware("tinybook")
+	engine.Use(g)
 	// 注册用户路由
 	userHandler.RegisterRoutes(engine)
 	// 注册文章路由
@@ -33,13 +39,29 @@ func InitWebServer(handlerFunc []gin.HandlerFunc, userHandler *web.UserHandler,
 
 // InitHandlerFunc 初始化中间件
 func InitHandlerFunc(redisClient redis.Cmdable, handler jwt.Handler, logger *zap.Logger) []gin.HandlerFunc {
-	corsConfig := initCorsConfig()          // 跨域配置
-	rateLimit := initRateLimit(redisClient) // 限流器
-	log := initLogger(logger)               // 日志 todo 本地开发时，可以注释掉
-	errorLog := initErrorLog(logger)        // 错误日志
-	loginJWT := initLoginJWT(handler)       // 登录jwt
-	return []gin.HandlerFunc{corsConfig, rateLimit, log, errorLog, loginJWT}
-	//return []gin.HandlerFunc{corsConfig, log, errorLog, loginJWT}
+	corsConfig := initCorsConfig() // 跨域配置
+	//rateLimit := initRateLimit(redisClient)        // 限流器
+	log := initLogger(logger)                       // 日志请求记录器
+	errorLog := initErrorLog(logger)                // 错误日志
+	loginJWT := initLoginJWT(handler)               // 登录jwt
+	prometheusRespTime := initPrometheusRespTime()  // prometheus响应时间
+	activeReq := initPrometheusActiveReq()          // prometheus活跃链接数
+	middleware.InitCounter(prometheus2.CounterOpts{ // prometheus请求code
+		Namespace: "tinybook",
+		Subsystem: "gin",
+		Name:      "req_code",
+		Help:      "统计gin的http接口请求code",
+	})
+
+	return []gin.HandlerFunc{
+		corsConfig,
+		//rateLimit,
+		log,
+		errorLog,
+		loginJWT,
+		prometheusRespTime,
+		activeReq,
+	}
 }
 
 // initCorsConfig 跨域配置
@@ -60,11 +82,27 @@ func initErrorLog(logger *zap.Logger) gin.HandlerFunc {
 	return middleware.NewErrorLogMiddleware(logger).Build()
 }
 
-// initLogger 初始化日志
+func initPrometheusRespTime() gin.HandlerFunc {
+	return prometheus.NewBuilder("tinybook", "gin", "http_request", "统计gin的http接口请求数据", "1").BuildResponseTime()
+}
+
+func initPrometheusActiveReq() gin.HandlerFunc {
+	return prometheus.NewBuilder("tinybook", "gin", "http_request", "统计gin的活跃链接数", "1").BuildActiveRequest()
+}
+
+// initLogger 初始化日志请求记录器
 func initLogger(logger *zap.Logger) gin.HandlerFunc {
 	return middleware.NewLogMiddleware(func(ctx *gin.Context, accessLog *middleware.AccessLog) {
-		logger.Info("", zap.Any("accessLog", accessLog))
-	}).AllowPrintReqBody().AllowPrintRespBody().Build()
+		logger.Info("HTTP Log",
+			zap.String("Path", accessLog.Path),
+			zap.String("Method", accessLog.Method),
+			zap.String("IP", accessLog.Ip),
+			zap.String("RequestBody", accessLog.ReqBody),
+			zap.String("ResponseBody", accessLog.RespBody),
+			zap.String("Duration", accessLog.Duration),
+			zap.Int("Status", accessLog.Status),
+		)
+	}).AllowPrintReqBody().AllowPrintRespBody().Build() // 允许打印请求和响应的body
 }
 
 // initLoginJWT 初始化登录jwt

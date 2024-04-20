@@ -50,7 +50,7 @@ func (userHandler *UserHandler) SignUp(ctx *gin.Context) {
 		return
 	}
 	// 调用service层的Signup方法
-	err := userHandler.userService.Signup(ctx, domain.User{
+	err := userHandler.userService.Signup(ctx.Request.Context(), domain.User{
 		Email:    sign.Email,
 		Password: sign.Password,
 	})
