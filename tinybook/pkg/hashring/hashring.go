@@ -36,6 +36,7 @@ type ConsistentHash struct {
 	Nodes sync.Map
 	sync.RWMutex
 	hash *xxhash.Digest
+	rand *rand.Rand
 }
 
 func NewHashRing() ConsistentHashRing {
@@ -43,6 +44,7 @@ func NewHashRing() ConsistentHashRing {
 		Ring:  make(HashRing, 0),
 		Nodes: sync.Map{},
 		hash:  xxhash.New(),
+		rand:  rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }
 
@@ -67,8 +69,7 @@ func (c *ConsistentHash) GetNode(key string) Node {
 	if len(c.Ring) == 0 {
 		return Node{}
 	}
-	int31 := rand.Int31()
-	hashKey := c.hashKey(key + strconv.Itoa(int(int31))) // 生成哈希值
+	hashKey := c.hashKey(key + strconv.Itoa(c.rand.Int())) // 生成哈希值
 	idx := sort.Search(len(c.Ring), func(i int) bool { return c.Ring[i] >= hashKey })
 	if idx == len(c.Ring) {
 		idx = 0
@@ -129,13 +130,24 @@ func (c *ConsistentHash) updateVirtualNodes(nodeID string, load int32) {
 	if load > MaxLoad {
 		load = MaxLoad
 	}
-	virtualNodes := MaxLoad - load // 虚拟节点数量 = 最大负载 - 节点负载, 负载越高 节点越少
+	virtualNodes := MaxLoad - load                 // 虚拟节点数量 = 最大负载 - 节点负载, 负载越高 节点越少
+	newRingSize := len(c.Ring) + int(virtualNodes) // 新的哈希环大小
+
+	// 创建一个足够大的切片
+	newRing := make(HashRing, newRingSize)
+
+	// 使用 copy() 复制现有的哈希环元素到新切片中
+	copied := copy(newRing, c.Ring)
+
+	// 添加新的虚拟节点到新切片的未使用部分
 	for i := 0; i < int(virtualNodes); i++ {
 		virtualNodeKey := nodeID + strconv.Itoa(i)
 		hashedKey := c.hashKey(virtualNodeKey)
 		c.Nodes.Store(hashedKey, Node{ID: nodeID, Load: load})
-		c.Ring = append(c.Ring, hashedKey) // 将虚拟节点的哈希值添加到哈希环中
+		newRing[copied+i] = hashedKey
 	}
+	// 更新哈希环
+	c.Ring = newRing
 }
 
 func (c *ConsistentHash) removeVirtualNodes(nodeID string) {
