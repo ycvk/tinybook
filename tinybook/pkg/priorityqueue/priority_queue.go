@@ -82,10 +82,12 @@ func (pq *HeapPriorityQueue[T, P]) Push(x any) {
 
 // Pop implements heap.Interface 弹出最后一个元素
 func (pq *HeapPriorityQueue[T, P]) Pop() any {
-	old := pq.items
-	n := len(old)
-	item := old[n-1]
-	pq.items = old[:n-1]          // 直接截断 slice
+	pq.lock.Lock()
+	defer pq.lock.Unlock()
+
+	n := len(pq.items)
+	item := pq.items[n-1]
+	pq.items = pq.items[:n-1]     // 直接截断 slice
 	delete(pq.lookup, item.Value) // 立即从 lookupMap 中删除元素
 	return item
 }
@@ -134,7 +136,7 @@ func (pq *HeapPriorityQueue[T, P]) Update(value T, priority P) {
 func (pq *HeapPriorityQueue[T, P]) Clear() {
 	pq.lock.Lock()
 	defer pq.lock.Unlock()
-	pq.items = pq.items[:0] // 清空 slice，但保留其底层数组
+	pq.items = pq.items[:0] // 清空 slice 但保留其底层数组
 	for k := range pq.lookup {
 		delete(pq.lookup, k) // 清空 lookupMap
 	}
