@@ -22,7 +22,7 @@ type BatchRankingService struct {
 	BatchSize   int // 每次获取的文章数量
 	topNum      int // 排行榜数量
 	ScoreFunc   func(likeCount int64, utime time.Time) float64
-	queue       *priorityqueue.PriorityQueue[domain.Article, float64] // 优先队列
+	queue       priorityqueue.PriorityQueue[domain.Article, float64] // 优先队列
 	rankingRepo repository.RankingRepository
 }
 
