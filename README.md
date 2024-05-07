@@ -1,6 +1,6 @@
 # TinyBook
 
-一个golang实现的微服务。
+从零开始实现一个golang微服务。
 
 ## Table of Contents
 
@@ -25,7 +25,7 @@
 
 [GitHub Link](https://github.com/ycvk/tinybook/tree/main/)
 
-### 作业要求
+### 背景要求
 
 - **实现删除切片特定下标元素的方法。**
 - **性能要求：** 实现相对高性能的删除操作。
@@ -38,7 +38,7 @@
 
 [GitHub Link](https://github.com/ycvk/tinybook/tree/main/tinybook)
 
-### 作业要求
+### 背景要求
 
 1. **完善 `/users/edit` 接口**
 2. **允许的用户基本信息**
@@ -87,18 +87,18 @@
 
 [GitHub Link](https://github.com/ycvk/tinybook)
 
-### 作业要求
+### 背景要求
 
 1. **项目端口：** 修改项目启动端口为 8081。
 2. **Pod 数量：** 将项目部署为 2 个 Pod。
 3. **Redis 端口：** 修改 Redis 访问端口为 6380。
 4. **MySQL 端口：** 修改 MySQL 访问端口为 3308。
 
-### 需要提交的内容
+### 证明内容
 
-- `kubectl get services` 的截图。
-- `kubectl get pods` 的截图。
-- 通过浏览器访问 Tinybook 项目并获得正确响应的截图。
+- `kubectl get services`
+- `kubectl get pods` 
+- 通过浏览器访问 Tinybook 项目并获得正确响应
 
 ### kubectl 截图
 
@@ -129,7 +129,7 @@
 
 [GitHub Link](https://github.com/ycvk/tinybook/)
 
-### 作业要求
+### 背景要求
 
 1. **重构现有的CodeCache**：
 
@@ -169,7 +169,7 @@
 | go-cache  | 易于使用，长时间维护                      | 长久未更新，可能存在潜在的安全和性能问题                                                 | 是       | 低    | 简单缓存需求，不关心长期维护和扩展性  | 是    | 低     |
 | theine-go | 支持TTL与持久化，自适应W-TinyLFU淘汰策略，高命中率 | 相对较新，社区支持可能较少                                                        | 是       | 高    | 需要TTL管理和持久化，高命中率要求  | 是    | 不确定   |
 
-综上所述，本次作业可以选用 `ristretto` 或 `theine-go` 作为本地缓存。
+综上所述，本次需求可以选用 `ristretto` 或 `theine-go` 作为本地缓存。
 
 ##### 参考链接
 
@@ -214,7 +214,7 @@
 
 [GitHub Link](https://github.com/ycvk/tinybook/tree/main/week05)
 
-### 作业要求
+### 背景要求
 
 - **容错机制设计：** 当触发限流或服务商崩溃时，将请求转储到数据库，并异步处理。
 - **服务商崩溃判定：** 设计新的判定机制，不使用课程给定方法，并阐述决策理由。
@@ -451,7 +451,7 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 
 [GitHub Link](https://github.com/ycvk/tinybook/blob/week06/tinybook/internal/web/middleware/error.go)
 
-### 作业要求
+### 背景要求
 
 - 在 Web 的 Handler 部分，有很多 if-else 分支，基本上都是在判定 err !=nil。每一个 if 里面都要打印日志。
 - 现在要求优化这些打印日志的逻辑，避免每一处 err !=nil 的时候，都得手动打一个日志。
@@ -515,7 +515,7 @@ insert进数据库后，开始重试，重试超过了最大次数，重试彻�
 
 [GitHub Link](https://github.com/ycvk/tinybook/tree/week07)
 
-### 作业要求
+### 背景要求
 
 本次的核心是设计一个能够找出按照点赞数量前 N 个数据的高性能方案。方案应考虑以下要点：
 
